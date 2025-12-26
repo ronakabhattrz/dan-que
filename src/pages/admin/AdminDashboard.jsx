@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../../context/ProfileContext';
+import { useAuth } from '../../context/AuthContext';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import '../../index.css';
@@ -8,6 +9,7 @@ import '../../index.css';
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const { profiles, updateProfileStatus } = useProfile();
+    const { currentUser, logout } = useAuth();
     const [filter, setFilter] = useState('all');
 
     const filteredProfiles = filter === 'all'
@@ -30,6 +32,11 @@ const AdminDashboard = () => {
         updateProfileStatus(profileId, action);
     };
 
+    const handleLogout = () => {
+        logout();
+        navigate('/admin/login');
+    };
+
     return (
         <div className="container" style={{
             paddingTop: 'var(--spacing-3xl)',
@@ -37,10 +44,17 @@ const AdminDashboard = () => {
         }}>
             <div className="fade-in">
                 <div className="flex justify-between items-center mb-xl">
-                    <h1>Admin Dashboard</h1>
-                    <Button variant="secondary" onClick={() => navigate('/')}>
-                        ← Back to Home
-                    </Button>
+                    <div>
+                        <h1>Admin Dashboard</h1>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginTop: 'var(--spacing-sm)' }}>
+                            Welcome, {currentUser?.name}
+                        </p>
+                    </div>
+                    <div className="flex gap-md">
+                        <Button variant="outline" onClick={handleLogout}>
+                            Logout
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Stats Cards */}
@@ -164,8 +178,8 @@ const AdminDashboard = () => {
                                             </td>
                                             <td style={{ padding: 'var(--spacing-md)' }}>
                                                 <span className={`badge badge-${profile.status === 'verified' ? 'success' :
-                                                        profile.status === 'pending' ? 'warning' :
-                                                            profile.status === 'rejected' ? 'error' : 'secondary'
+                                                    profile.status === 'pending' ? 'warning' :
+                                                        profile.status === 'rejected' ? 'error' : 'secondary'
                                                     }`}>
                                                     {profile.status}
                                                 </span>

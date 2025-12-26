@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext';
+import { useAuth } from '../context/AuthContext';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import '../index.css';
@@ -8,6 +9,7 @@ import '../index.css';
 const HomePage = () => {
     const navigate = useNavigate();
     const { profiles } = useProfile();
+    const { currentUser, logout } = useAuth();
 
     const handleNewProfile = () => {
         navigate('/profile-type');
@@ -17,10 +19,30 @@ const HomePage = () => {
         navigate(`/profile/${profileId}`);
     };
 
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
+
     return (
         <div className="container" style={{ paddingTop: 'var(--spacing-3xl)', paddingBottom: 'var(--spacing-3xl)' }}>
             <div className="fade-in">
-                <h1 className="text-center mb-xl">Profile Management</h1>
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 'var(--spacing-xl)'
+                }}>
+                    <div>
+                        <h1 className="text-center mb-sm">Profile Management</h1>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
+                            Welcome back, {currentUser?.name}!
+                        </p>
+                    </div>
+                    <Button variant="outline" onClick={handleLogout}>
+                        Logout
+                    </Button>
+                </div>
 
                 <Card className="mb-xl">
                     <h2 style={{ fontSize: '1.5rem', marginBottom: 'var(--spacing-lg)' }}>
@@ -88,8 +110,8 @@ const HomePage = () => {
                                         </div>
                                     </div>
                                     <span className={`badge badge-${profile.status === 'verified' ? 'success' :
-                                            profile.status === 'pending' ? 'warning' :
-                                                profile.status === 'rejected' ? 'error' : 'secondary'
+                                        profile.status === 'pending' ? 'warning' :
+                                            profile.status === 'rejected' ? 'error' : 'secondary'
                                         }`}>
                                         {profile.status}
                                     </span>
