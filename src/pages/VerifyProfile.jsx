@@ -15,18 +15,34 @@ const VerifyProfile = () => {
         return null;
     }
 
+    // Check if all required fields are filled
+    const requiredFields = currentProfile.type === 'personal'
+        ? ['name', 'address', 'phone', 'email']
+        : ['businessName', 'address', 'phone', 'email', 'ein'];
+
+    const missingFields = requiredFields.filter(field => !currentProfile[field]);
+    const hasAllRequiredFields = missingFields.length === 0;
+
     const requiredDocs = currentProfile.type === 'personal'
         ? ['SSN / EIN', "Driver's License", 'Marriage cert.']
         : ['SSN / EIN', "Driver's License", 'Business License'];
 
     const handleVerify = () => {
+        if (!hasAllRequiredFields) {
+            return; // Don't allow verification if required fields are missing
+        }
         setIsVerified(!isVerified);
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
         if (isVerified) {
-            updateProfileInfo({ verified: true });
-            navigate('/upload-documents');
+            try {
+                await updateProfileInfo({ verified: true });
+                navigate('/upload-documents');
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                alert('Failed to update profile. Please try again.');
+            }
         }
     };
 
@@ -50,35 +66,140 @@ const VerifyProfile = () => {
                         marginBottom: 'var(--spacing-md)',
                         border: '1px solid var(--surface-glass-border)'
                     }}>
-                        {Object.entries(currentProfile.generalInfo).map(([key, value]) => (
-                            <div key={key} className="flex justify-between" style={{
-                                marginBottom: 'var(--spacing-sm)',
-                                paddingBottom: 'var(--spacing-sm)',
-                                borderBottom: '1px solid var(--surface-glass-border)'
-                            }}>
-                                <span style={{
-                                    color: 'var(--text-secondary)',
-                                    textTransform: 'capitalize'
-                                }}>
-                                    {key.replace(/([A-Z])/g, ' $1').trim()}:
-                                </span>
-                                <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>
-                                    {value}
-                                </span>
-                            </div>
-                        ))}
+                        {currentProfile.type === 'personal' ? (
+                            <>
+                                {currentProfile.name && (
+                                    <div className="flex justify-between" style={{
+                                        marginBottom: 'var(--spacing-sm)',
+                                        paddingBottom: 'var(--spacing-sm)',
+                                        borderBottom: '1px solid var(--surface-glass-border)'
+                                    }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Name:</span>
+                                        <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{currentProfile.name}</span>
+                                    </div>
+                                )}
+                                {currentProfile.address && (
+                                    <div className="flex justify-between" style={{
+                                        marginBottom: 'var(--spacing-sm)',
+                                        paddingBottom: 'var(--spacing-sm)',
+                                        borderBottom: '1px solid var(--surface-glass-border)'
+                                    }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Address:</span>
+                                        <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{currentProfile.address}</span>
+                                    </div>
+                                )}
+                                {currentProfile.phone && (
+                                    <div className="flex justify-between" style={{
+                                        marginBottom: 'var(--spacing-sm)',
+                                        paddingBottom: 'var(--spacing-sm)',
+                                        borderBottom: '1px solid var(--surface-glass-border)'
+                                    }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Phone:</span>
+                                        <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{currentProfile.phone}</span>
+                                    </div>
+                                )}
+                                {currentProfile.email && (
+                                    <div className="flex justify-between" style={{ marginBottom: '0' }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Email:</span>
+                                        <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{currentProfile.email}</span>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                {currentProfile.businessName && (
+                                    <div className="flex justify-between" style={{
+                                        marginBottom: 'var(--spacing-sm)',
+                                        paddingBottom: 'var(--spacing-sm)',
+                                        borderBottom: '1px solid var(--surface-glass-border)'
+                                    }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Business Name:</span>
+                                        <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{currentProfile.businessName}</span>
+                                    </div>
+                                )}
+                                {currentProfile.address && (
+                                    <div className="flex justify-between" style={{
+                                        marginBottom: 'var(--spacing-sm)',
+                                        paddingBottom: 'var(--spacing-sm)',
+                                        borderBottom: '1px solid var(--surface-glass-border)'
+                                    }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Address:</span>
+                                        <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{currentProfile.address}</span>
+                                    </div>
+                                )}
+                                {currentProfile.phone && (
+                                    <div className="flex justify-between" style={{
+                                        marginBottom: 'var(--spacing-sm)',
+                                        paddingBottom: 'var(--spacing-sm)',
+                                        borderBottom: '1px solid var(--surface-glass-border)'
+                                    }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Phone:</span>
+                                        <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{currentProfile.phone}</span>
+                                    </div>
+                                )}
+                                {currentProfile.email && (
+                                    <div className="flex justify-between" style={{
+                                        marginBottom: 'var(--spacing-sm)',
+                                        paddingBottom: 'var(--spacing-sm)',
+                                        borderBottom: '1px solid var(--surface-glass-border)'
+                                    }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>Email:</span>
+                                        <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{currentProfile.email}</span>
+                                    </div>
+                                )}
+                                {currentProfile.ein && (
+                                    <div className="flex justify-between" style={{ marginBottom: '0' }}>
+                                        <span style={{ color: 'var(--text-secondary)' }}>EIN:</span>
+                                        <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{currentProfile.ein}</span>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
+
+                    {!hasAllRequiredFields && (
+                        <div style={{
+                            padding: 'var(--spacing-md)',
+                            background: 'rgba(251, 191, 36, 0.1)',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px solid var(--warning)',
+                            marginTop: 'var(--spacing-lg)',
+                            marginBottom: 'var(--spacing-lg)'
+                        }}>
+                            <p style={{ fontSize: '0.875rem', color: 'var(--warning)', marginBottom: 'var(--spacing-xs)', fontWeight: '600' }}>
+                                ⚠️ Missing Required Fields
+                            </p>
+                            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0' }}>
+                                Please go back and complete: {missingFields.map(f => {
+                                    const labels = {
+                                        name: 'Name',
+                                        businessName: 'Business Name',
+                                        address: 'Address',
+                                        phone: 'Phone',
+                                        email: 'Email',
+                                        ein: 'EIN'
+                                    };
+                                    return labels[f] || f;
+                                }).join(', ')}
+                            </p>
+                        </div>
+                    )}
 
                     <div
                         className="checkbox-wrapper"
                         onClick={handleVerify}
-                        style={{ marginTop: 'var(--spacing-lg)' }}
+                        style={{
+                            marginTop: 'var(--spacing-lg)',
+                            opacity: hasAllRequiredFields ? 1 : 0.5,
+                            cursor: hasAllRequiredFields ? 'pointer' : 'not-allowed'
+                        }}
                     >
                         <input
                             type="checkbox"
                             className="checkbox"
                             checked={isVerified}
                             onChange={handleVerify}
+                            disabled={!hasAllRequiredFields}
                         />
                         <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>
                             Verify

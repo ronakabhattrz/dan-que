@@ -9,9 +9,14 @@ const ProfileTypeSelection = () => {
     const navigate = useNavigate();
     const { createProfile } = useProfile();
 
-    const handleSelectType = (type) => {
-        createProfile(type);
-        navigate('/general-info');
+    const handleSelectType = async (type) => {
+        try {
+            await createProfile(type);
+            navigate('/general-info');
+        } catch (error) {
+            console.error('Error creating profile:', error);
+            alert('Failed to create profile. Please try again.');
+        }
     };
 
     return (

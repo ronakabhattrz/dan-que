@@ -5,6 +5,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import ProgressBar from '../components/ProgressBar';
+import { validateField } from '../utils/validators';
 import '../index.css';
 
 const GeneralInfoCollection = () => {
@@ -28,8 +29,18 @@ const GeneralInfoCollection = () => {
         ];
 
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [formData, setFormData] = useState(currentProfile?.generalInfo || {});
+    const [formData, setFormData] = useState(() => {
+        // Initialize from profile root fields
+        const data = {};
+        questions.forEach(q => {
+            if (currentProfile?.[q.id]) {
+                data[q.id] = currentProfile[q.id];
+            }
+        });
+        return data;
+    });
     const [editMode, setEditMode] = useState({});
+    const [errors, setErrors] = useState({});
 
     const currentQuestion = questions[currentQuestionIndex];
 
@@ -50,6 +61,21 @@ const GeneralInfoCollection = () => {
 
     const handleInputChange = (id, value) => {
         setFormData(prev => ({ ...prev, [id]: value }));
+        // Clear error when user starts typing
+        if (errors[id]) {
+            setErrors(prev => ({ ...prev, [id]: '' }));
+        }
+    };
+
+    const handleBlur = (id) => {
+        const value = formData[id];
+        const validation = validateField(id, value, currentProfile?.type);
+
+        if (!validation.isValid) {
+            setErrors(prev => ({ ...prev, [id]: validation.error }));
+        } else {
+            setErrors(prev => ({ ...prev, [id]: '' }));
+        }
     };
 
     const handleSave = (questionId) => {
@@ -62,6 +88,15 @@ const GeneralInfoCollection = () => {
     };
 
     const handleNext = () => {
+        // Validate current field before proceeding
+        const currentValue = formData[currentQuestion.id];
+        const validation = validateField(currentQuestion.id, currentValue, currentProfile?.type);
+
+        if (!validation.isValid) {
+            setErrors(prev => ({ ...prev, [currentQuestion.id]: validation.error }));
+            return;
+        }
+
         if (currentQuestionIndex < questions.length - 1) {
             // Save current field if it has data
             if (formData[currentQuestion.id]) {
@@ -69,8 +104,15 @@ const GeneralInfoCollection = () => {
             }
             setCurrentQuestionIndex(prev => prev + 1);
         } else {
+            // Map businessName to business_name for database
+            const dataToSave = { ...formData };
+            if (dataToSave.businessName) {
+                dataToSave.business_name = dataToSave.businessName;
+                delete dataToSave.businessName;
+            }
+
             // Save all data and move to verification
-            updateProfileInfo(formData);
+            updateProfileInfo(dataToSave);
             navigate('/verify-profile');
         }
     };
@@ -106,21 +148,31 @@ const GeneralInfoCollection = () => {
                         <p style={{
                             fontSize: '0.875rem',
                             color: 'var(--text-secondary)',
-                            marginBottom: 'var(--spacing-xs)'
+                            marginBottom: 'var(--spacing-sm)'
                         }}>
                             This is a progress bar that dynamically shows the info entered below.
                         </p>
-                        <div style={{ display: 'flex', gap: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
-                            {Object.entries(formData).filter(([_, value]) => value && value.trim() !== '').map(([key, value]) => (
-                                <span key={key} style={{
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 'var(--spacing-xs)'
+                        }}>
+                            {questions.map((question) => (
+                                <div key={question.id} style={{
                                     fontSize: '0.875rem',
                                     color: 'var(--text-primary)',
-                                    background: 'var(--primary-500)',
-                                    padding: '4px 12px',
-                                    borderRadius: 'var(--radius-sm)'
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 'var(--spacing-xs)'
                                 }}>
-                                    {key}: {value}
-                                </span>
+                                    <span style={{ fontWeight: '500' }}>{question.label}:</span>
+                                    <span style={{
+                                        color: formData[question.id] ? 'var(--primary-400)' : 'var(--text-tertiary)',
+                                        fontFamily: 'monospace'
+                                    }}>
+                                        {formData[question.id] || '————'}
+                                    </span>
+                                </div>
                             ))}
                         </div>
                     </div>
@@ -184,8 +236,10 @@ const GeneralInfoCollection = () => {
                                         type={question.type}
                                         value={formData[question.id] || ''}
                                         onChange={(e) => handleInputChange(question.id, e.target.value)}
+                                        onBlur={() => handleBlur(question.id)}
                                         placeholder={question.placeholder}
                                         disabled={editMode[question.id] === false && formData[question.id]}
+                                        error={errors[question.id]}
                                     />
                                 </div>
 

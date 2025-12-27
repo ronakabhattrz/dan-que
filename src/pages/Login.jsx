@@ -1,19 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuthContext } from '../context/AuthContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Card from '../components/Card';
 
 const Login = () => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { signIn, user, isAdmin, loading } = useAuthContext();
     const [formData, setFormData] = useState({
         email: '',
         password: ''
     });
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // Redirect after login when role is determined
+    useEffect(() => {
+        if (user && !loading) {
+            // Wait a bit for admin role to be checked
+            const timer = setTimeout(() => {
+                if (isAdmin) {
+                    navigate('/admin');
+                } else {
+                    navigate('/');
+                }
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [user, isAdmin, loading, navigate]);
 
     const handleChange = (e) => {
         setFormData({
@@ -29,11 +44,11 @@ const Login = () => {
         setIsLoading(true);
 
         try {
-            await login(formData.email, formData.password, 'user');
-            navigate('/');
+            const { error } = await signIn(formData.email, formData.password);
+            if (error) throw error;
+            // Navigation will happen in useEffect after role is checked
         } catch (err) {
-            setError(err.message);
-        } finally {
+            setError(err.message || 'Failed to sign in');
             setIsLoading(false);
         }
     };
@@ -102,12 +117,6 @@ const Login = () => {
                         <Link to="/signup" className="auth-link">
                             Create an account
                         </Link>
-
-                        <div className="auth-footer">
-                            <Link to="/admin/login" className="admin-link">
-                                Admin Login →
-                            </Link>
-                        </div>
                     </form>
                 </Card>
             </div>

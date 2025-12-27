@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../context/ProfileContext';
-import { useAuth } from '../context/AuthContext';
+import { useAuthContext } from '../context/AuthContext';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import '../index.css';
@@ -9,7 +9,7 @@ import '../index.css';
 const HomePage = () => {
     const navigate = useNavigate();
     const { profiles } = useProfile();
-    const { currentUser, logout } = useAuth();
+    const { user, signOut } = useAuthContext();
 
     const handleNewProfile = () => {
         navigate('/profile-type');
@@ -19,8 +19,8 @@ const HomePage = () => {
         navigate(`/profile/${profileId}`);
     };
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        await signOut();
         navigate('/login');
     };
 
@@ -36,7 +36,7 @@ const HomePage = () => {
                     <div>
                         <h1 className="text-center mb-sm">Profile Management</h1>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
-                            Welcome back, {currentUser?.name}!
+                            Welcome back, {user?.email}!
                         </p>
                     </div>
                     <Button variant="outline" onClick={handleLogout}>
@@ -96,7 +96,7 @@ const HomePage = () => {
                                             fontWeight: '600',
                                             marginBottom: 'var(--spacing-xs)'
                                         }}>
-                                            {index + 1}. {profile.generalInfo.name || 'Unnamed Profile'}
+                                            {index + 1}. {profile.name || profile.businessName || 'Unnamed Profile'}
                                             <span style={{
                                                 color: 'var(--text-tertiary)',
                                                 fontWeight: '400',
@@ -106,7 +106,7 @@ const HomePage = () => {
                                             </span>
                                         </div>
                                         <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                                            Created: {new Date(profile.createdAt).toLocaleDateString()}
+                                            Created: {new Date(profile.created_at).toLocaleDateString()}
                                         </div>
                                     </div>
                                     <span className={`badge badge-${profile.status === 'verified' ? 'success' :
@@ -162,12 +162,6 @@ const HomePage = () => {
                             Create New
                         </p>
                     </Card>
-                </div>
-
-                <div className="text-center">
-                    <Button variant="outline" onClick={() => navigate('/admin')}>
-                        Admin Dashboard
-                    </Button>
                 </div>
             </div>
         </div>

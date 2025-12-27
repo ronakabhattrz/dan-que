@@ -1,39 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../../context/ProfileContext';
-import { useAuth } from '../../context/AuthContext';
+import { useAuthContext } from '../../context/AuthContext';
+import { profileService } from '../../services/profileService';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import '../../index.css';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
-    const { profiles, updateProfileStatus } = useProfile();
-    const { currentUser, logout } = useAuth();
+    const { profiles, loadUserProfiles } = useProfile();
+    const { user, signOut } = useAuthContext();
     const [filter, setFilter] = useState('all');
+    const [allProfiles, setAllProfiles] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // Load all profiles for admin view
+    useEffect(() => {
+        loadAllProfiles();
+    }, []);
+
+    const loadAllProfiles = async () => {
+        try {
+            setLoading(true);
+            const pending = await profileService.getPendingProfiles();
+            setAllProfiles(pending);
+        } catch (error) {
+            console.error('Error loading profiles:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const filteredProfiles = filter === 'all'
-        ? profiles
-        : profiles.filter(p => p.status === filter);
+        ? allProfiles
+        : allProfiles.filter(p => p.status === filter);
 
     const stats = {
-        total: profiles.length,
-        pending: profiles.filter(p => p.status === 'pending').length,
-        verified: profiles.filter(p => p.status === 'verified').length,
-        rejected: profiles.filter(p => p.status === 'rejected').length,
-        draft: profiles.filter(p => p.status === 'draft').length
+        total: allProfiles.length,
+        pending: allProfiles.filter(p => p.status === 'pending').length,
+        verified: allProfiles.filter(p => p.status === 'verified').length,
+        rejected: allProfiles.filter(p => p.status === 'rejected').length,
+        draft: allProfiles.filter(p => p.status === 'draft').length
     };
 
     const handleViewProfile = (profileId) => {
         navigate(`/admin/profile/${profileId}`);
     };
 
-    const handleQuickAction = (profileId, action) => {
-        updateProfileStatus(profileId, action);
+    const handleQuickAction = async (profileId, action) => {
+        try {
+            if (action === 'verified') {
+                await profileService.approveProfile(profileId, user.id);
+            } else if (action === 'rejected') {
+                await profileService.rejectProfile(profileId, user.id);
+            }
+            await loadAllProfiles(); // Refresh list
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            alert('Failed to update profile. Please try again.');
+        }
     };
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        await signOut();
         navigate('/admin/login');
     };
 
@@ -47,7 +77,7 @@ const AdminDashboard = () => {
                     <div>
                         <h1>Admin Dashboard</h1>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginTop: 'var(--spacing-sm)' }}>
-                            Welcome, {currentUser?.name}
+                            Welcome, {user?.email}
                         </p>
                     </div>
                     <div className="flex gap-md">
@@ -127,7 +157,15 @@ const AdminDashboard = () => {
                         Profiles {filter !== 'all' && `- ${filter.charAt(0).toUpperCase() + filter.slice(1)}`}
                     </h2>
 
-                    {filteredProfiles.length === 0 ? (
+                    {loading ? (
+                        <div style={{
+                            textAlign: 'center',
+                            padding: 'var(--spacing-2xl)',
+                            color: 'var(--text-secondary)'
+                        }}>
+                            Loading profiles...
+                        </div>
+                    ) : filteredProfiles.length === 0 ? (
                         <div style={{
                             textAlign: 'center',
                             padding: 'var(--spacing-2xl)',
@@ -168,10 +206,10 @@ const AdminDashboard = () => {
                                             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                                         >
                                             <td style={{ padding: 'var(--spacing-md)', color: 'var(--text-tertiary)' }}>
-                                                {profile.id.slice(-6)}
+                                                {profile.id.slice(0, 8)}
                                             </td>
                                             <td style={{ padding: 'var(--spacing-md)', color: 'var(--text-primary)', fontWeight: '600' }}>
-                                                {profile.generalInfo.name || profile.generalInfo.businessName || 'Unnamed'}
+                                                {profile.name || profile.business_name || 'Unnamed'}
                                             </td>
                                             <td style={{ padding: 'var(--spacing-md)', color: 'var(--text-secondary)' }}>
                                                 {profile.type === 'personal' ? '👤 Personal' : '🏢 Business'}
@@ -185,7 +223,7 @@ const AdminDashboard = () => {
                                                 </span>
                                             </td>
                                             <td style={{ padding: 'var(--spacing-md)', color: 'var(--text-secondary)' }}>
-                                                {new Date(profile.createdAt).toLocaleDateString()}
+                                                {new Date(profile.created_at).toLocaleDateString()}
                                             </td>
                                             <td style={{ padding: 'var(--spacing-md)', color: 'var(--text-secondary)' }}>
                                                 {profile.documents?.length || 0} files

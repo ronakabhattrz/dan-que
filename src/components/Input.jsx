@@ -25,6 +25,10 @@ const Input = ({
                 onChange={onChange}
                 placeholder={placeholder}
                 required={required}
+                style={{
+                    borderColor: error ? 'var(--error)' : undefined,
+                    borderWidth: error ? '2px' : undefined
+                }}
                 {...props}
             />
             {error && (

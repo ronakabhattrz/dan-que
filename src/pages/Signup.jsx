@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuthContext } from '../context/AuthContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Card from '../components/Card';
 
 const Signup = () => {
     const navigate = useNavigate();
-    const { signup } = useAuth();
+    const { signUp } = useAuthContext();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -50,10 +50,11 @@ const Signup = () => {
         setIsLoading(true);
 
         try {
-            await signup(formData.name, formData.email, formData.password);
+            const { error } = await signUp(formData.email, formData.password);
+            if (error) throw error;
             navigate('/');
         } catch (err) {
-            setError(err.message);
+            setError(err.message || 'Failed to create account');
         } finally {
             setIsLoading(false);
         }

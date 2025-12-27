@@ -23,9 +23,14 @@ const AdminProfileDetails = () => {
         );
     }
 
-    const handleStatusChange = (newStatus) => {
-        updateProfileStatus(profileId, newStatus);
-        navigate('/admin');
+    const handleStatusChange = async (newStatus) => {
+        try {
+            await updateProfileStatus(profileId, newStatus);
+            navigate('/admin');
+        } catch (error) {
+            console.error('Error updating status:', error);
+            alert('Failed to update profile status. Please try again.');
+        }
     };
 
     return (
@@ -46,15 +51,15 @@ const AdminProfileDetails = () => {
                     <div className="flex justify-between items-center">
                         <div>
                             <h2 style={{ fontSize: '1.5rem', marginBottom: 'var(--spacing-sm)' }}>
-                                {profile.generalInfo.name || profile.generalInfo.businessName || 'Unnamed Profile'}
+                                {profile.name || profile.business_name || 'Unnamed Profile'}
                             </h2>
                             <div style={{ color: 'var(--text-secondary)' }}>
                                 ID: {profile.id} • Type: {profile.type === 'personal' ? 'Personal' : 'Business'}
                             </div>
                         </div>
                         <span className={`badge badge-${profile.status === 'verified' ? 'success' :
-                                profile.status === 'pending' ? 'warning' :
-                                    profile.status === 'rejected' ? 'error' : 'secondary'
+                            profile.status === 'pending' ? 'warning' :
+                                profile.status === 'rejected' ? 'error' : 'secondary'
                             }`} style={{ fontSize: '1rem', padding: 'var(--spacing-sm) var(--spacing-md)' }}>
                             {profile.status}
                         </span>
@@ -72,23 +77,62 @@ const AdminProfileDetails = () => {
                         padding: 'var(--spacing-lg)',
                         border: '1px solid var(--surface-glass-border)'
                     }}>
-                        {Object.entries(profile.generalInfo).map(([key, value]) => (
-                            <div key={key} className="flex justify-between" style={{
+                        {profile.name && (
+                            <div className="flex justify-between" style={{
                                 marginBottom: 'var(--spacing-sm)',
                                 paddingBottom: 'var(--spacing-sm)',
                                 borderBottom: '1px solid var(--surface-glass-border)'
                             }}>
-                                <span style={{
-                                    color: 'var(--text-secondary)',
-                                    textTransform: 'capitalize'
-                                }}>
-                                    {key.replace(/([A-Z])/g, ' $1').trim()}:
-                                </span>
-                                <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>
-                                    {value}
-                                </span>
+                                <span style={{ color: 'var(--text-secondary)' }}>Name:</span>
+                                <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{profile.name}</span>
                             </div>
-                        ))}
+                        )}
+                        {profile.business_name && (
+                            <div className="flex justify-between" style={{
+                                marginBottom: 'var(--spacing-sm)',
+                                paddingBottom: 'var(--spacing-sm)',
+                                borderBottom: '1px solid var(--surface-glass-border)'
+                            }}>
+                                <span style={{ color: 'var(--text-secondary)' }}>Business Name:</span>
+                                <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{profile.business_name}</span>
+                            </div>
+                        )}
+                        {profile.address && (
+                            <div className="flex justify-between" style={{
+                                marginBottom: 'var(--spacing-sm)',
+                                paddingBottom: 'var(--spacing-sm)',
+                                borderBottom: '1px solid var(--surface-glass-border)'
+                            }}>
+                                <span style={{ color: 'var(--text-secondary)' }}>Address:</span>
+                                <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{profile.address}</span>
+                            </div>
+                        )}
+                        {profile.phone && (
+                            <div className="flex justify-between" style={{
+                                marginBottom: 'var(--spacing-sm)',
+                                paddingBottom: 'var(--spacing-sm)',
+                                borderBottom: '1px solid var(--surface-glass-border)'
+                            }}>
+                                <span style={{ color: 'var(--text-secondary)' }}>Phone:</span>
+                                <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{profile.phone}</span>
+                            </div>
+                        )}
+                        {profile.email && (
+                            <div className="flex justify-between" style={{
+                                marginBottom: 'var(--spacing-sm)',
+                                paddingBottom: 'var(--spacing-sm)',
+                                borderBottom: '1px solid var(--surface-glass-border)'
+                            }}>
+                                <span style={{ color: 'var(--text-secondary)' }}>Email:</span>
+                                <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{profile.email}</span>
+                            </div>
+                        )}
+                        {profile.ein && (
+                            <div className="flex justify-between" style={{ marginBottom: '0' }}>
+                                <span style={{ color: 'var(--text-secondary)' }}>EIN:</span>
+                                <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{profile.ein}</span>
+                            </div>
+                        )}
                     </div>
                 </Card>
 
@@ -121,18 +165,10 @@ const AdminProfileDetails = () => {
                                         fontSize: '0.875rem',
                                         color: 'var(--text-secondary)'
                                     }}>
-                                        {doc.files.length} file(s) • Uploaded: {new Date(doc.uploadedAt).toLocaleString()}
+                                        Uploaded: {new Date(doc.uploaded_at).toLocaleString()}
                                     </div>
-                                    <div style={{ marginTop: 'var(--spacing-sm)' }}>
-                                        {doc.files.map((file, idx) => (
-                                            <div key={idx} style={{
-                                                fontSize: '0.875rem',
-                                                color: 'var(--text-tertiary)',
-                                                marginLeft: 'var(--spacing-md)'
-                                            }}>
-                                                • {file.name}
-                                            </div>
-                                        ))}
+                                    <div style={{ marginTop: 'var(--spacing-sm)', fontSize: '0.875rem', color: 'var(--text-tertiary)' }}>
+                                        {doc.name} ({(doc.file_size / 1024).toFixed(2)} KB)
                                     </div>
                                 </div>
                             ))}
@@ -163,14 +199,14 @@ const AdminProfileDetails = () => {
                         <div className="flex justify-between mb-sm">
                             <span style={{ color: 'var(--text-secondary)' }}>Created:</span>
                             <span style={{ color: 'var(--text-primary)' }}>
-                                {new Date(profile.createdAt).toLocaleString()}
+                                {new Date(profile.created_at).toLocaleString()}
                             </span>
                         </div>
-                        {profile.updatedAt && (
+                        {profile.updated_at && (
                             <div className="flex justify-between mb-sm">
                                 <span style={{ color: 'var(--text-secondary)' }}>Last Updated:</span>
                                 <span style={{ color: 'var(--text-primary)' }}>
-                                    {new Date(profile.updatedAt).toLocaleString()}
+                                    {new Date(profile.updated_at).toLocaleString()}
                                 </span>
                             </div>
                         )}

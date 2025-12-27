@@ -10,6 +10,7 @@ const UploadDocuments = () => {
     const navigate = useNavigate();
     const { currentProfile, addDocument, saveProfile } = useProfile();
     const [uploadedDocs, setUploadedDocs] = useState([]);
+    const [uploading, setUploading] = useState(false);
 
     if (!currentProfile) {
         navigate('/profile-type');
@@ -22,22 +23,31 @@ const UploadDocuments = () => {
 
     const alreadyUploaded = ['Marriage cert.', 'Birth cert.'];
 
-    const handleFileUpload = (docType, files) => {
-        const newDoc = {
-            id: Date.now().toString(),
-            type: docType,
-            files: files,
-            uploadedAt: new Date().toISOString()
-        };
+    const handleFileUpload = async (docType, files) => {
+        if (!files || files.length === 0) return;
 
-        addDocument(newDoc);
-        setUploadedDocs(prev => [...prev, docType]);
+        setUploading(true);
+        try {
+            // Upload each file to Supabase
+            for (const file of files) {
+                await addDocument(file);
+            }
+            setUploadedDocs(prev => [...prev, docType]);
+        } catch (error) {
+            console.error('Error uploading file:', error);
+            alert('Failed to upload file. Please try again.');
+        } finally {
+            setUploading(false);
+        }
     };
 
-    const handleDone = () => {
-        const saved = saveProfile();
-        if (saved) {
+    const handleDone = async () => {
+        try {
+            await saveProfile();
             navigate('/');
+        } catch (error) {
+            console.error('Error saving profile:', error);
+            alert('Failed to save profile. Please try again.');
         }
     };
 
@@ -141,9 +151,9 @@ const UploadDocuments = () => {
                             variant="primary"
                             size="lg"
                             onClick={handleDone}
-                            disabled={!allRequiredUploaded}
+                            disabled={!allRequiredUploaded || uploading}
                         >
-                            DONE
+                            {uploading ? 'Uploading...' : 'DONE'}
                         </Button>
                     </div>
                 </Card>

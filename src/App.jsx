@@ -10,7 +10,7 @@ import ProfileTypeSelection from './pages/ProfileTypeSelection';
 import GeneralInfoCollection from './pages/GeneralInfoCollection';
 import VerifyProfile from './pages/VerifyProfile';
 import UploadDocuments from './pages/UploadDocuments';
-import AdminLogin from './pages/admin/AdminLogin';
+import ProfileDetails from './pages/ProfileDetails';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProfileDetails from './pages/admin/AdminProfileDetails';
 import './index.css';
@@ -24,7 +24,6 @@ function App() {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
 
             {/* Protected User Routes */}
             <Route path="/" element={
@@ -52,15 +51,20 @@ function App() {
                 <UploadDocuments />
               </ProtectedRoute>
             } />
+            <Route path="/profile/:profileId" element={
+              <ProtectedRoute>
+                <ProfileDetails />
+              </ProtectedRoute>
+            } />
 
             {/* Protected Admin Routes */}
             <Route path="/admin" element={
-              <ProtectedRoute requireAdmin={true}>
+              <ProtectedRoute adminOnly={true}>
                 <AdminDashboard />
               </ProtectedRoute>
             } />
             <Route path="/admin/profile/:profileId" element={
-              <ProtectedRoute requireAdmin={true}>
+              <ProtectedRoute adminOnly={true}>
                 <AdminProfileDetails />
               </ProtectedRoute>
             } />
