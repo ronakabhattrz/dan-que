@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Card from '../components/Card';
+import '../index.css';
 
 const Login = () => {
     const navigate = useNavigate();
     const { signIn, user, isAdmin, loading } = useAuthContext();
+    const { showSuccess, showError } = useNotifications();
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -15,18 +18,14 @@ const Login = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Redirect after login when role is determined
+    // Secure redirection logic
     useEffect(() => {
-        if (user && !loading) {
-            // Wait a bit for admin role to be checked
-            const timer = setTimeout(() => {
-                if (isAdmin) {
-                    navigate('/admin');
-                } else {
-                    navigate('/');
-                }
-            }, 500);
-            return () => clearTimeout(timer);
+        if (!loading && user) {
+            if (isAdmin) {
+                navigate('/admin', { replace: true });
+            } else {
+                navigate('/', { replace: true });
+            }
         }
     }, [user, isAdmin, loading, navigate]);
 
@@ -35,7 +34,7 @@ const Login = () => {
             ...formData,
             [e.target.name]: e.target.value
         });
-        setError(''); // Clear error when user types
+        setError('');
     };
 
     const handleSubmit = async (e) => {
@@ -45,13 +44,25 @@ const Login = () => {
 
         try {
             const { error } = await signIn(formData.email, formData.password);
-            if (error) throw error;
-            // Navigation will happen in useEffect after role is checked
+            if (error) {
+                showError(error.message);
+                throw error;
+            }
+            showSuccess('Welcome back!');
         } catch (err) {
             setError(err.message || 'Failed to sign in');
+        } finally {
             setIsLoading(false);
         }
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="spinner"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
@@ -59,12 +70,12 @@ const Login = () => {
                 <div className="auth-header">
                     <div className="auth-icon">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                            <circle cx="12" cy="7" r="4" />
+                            <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" />
+                            <path d="M12 6a1 1 0 0 0-1 1v5a1 1 0 0 0 .293.707l3 3a1 1 0 0 0 1.414-1.414L13 11.586V7a1 1 0 0 0-1-1z" />
                         </svg>
                     </div>
                     <h1 className="auth-title">Welcome Back</h1>
-                    <p className="auth-subtitle">Sign in to your account to continue</p>
+                    <p className="auth-subtitle">Sign in to manage your profile</p>
                 </div>
 
                 <Card>
@@ -99,7 +110,7 @@ const Login = () => {
                                 id="password"
                                 type="password"
                                 name="password"
-                                placeholder="Enter your password"
+                                placeholder="••••••••"
                                 value={formData.password}
                                 onChange={handleChange}
                                 required
@@ -115,7 +126,7 @@ const Login = () => {
                         </div>
 
                         <Link to="/signup" className="auth-link">
-                            Create an account
+                            Create a new account
                         </Link>
                     </form>
                 </Card>

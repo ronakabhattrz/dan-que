@@ -15,62 +15,66 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProfileDetails from './pages/admin/AdminProfileDetails';
 import './index.css';
 
+import { NotificationProvider } from './context/NotificationContext';
+
 function App() {
   return (
     <AuthProvider>
-      <ProfileProvider>
-        <Router>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+      <NotificationProvider>
+        <ProfileProvider>
+          <Router>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
 
-            {/* Protected User Routes */}
-            <Route path="/" element={
-              <ProtectedRoute>
-                <HomePage />
-              </ProtectedRoute>
-            } />
-            <Route path="/profile-type" element={
-              <ProtectedRoute>
-                <ProfileTypeSelection />
-              </ProtectedRoute>
-            } />
-            <Route path="/general-info" element={
-              <ProtectedRoute>
-                <GeneralInfoCollection />
-              </ProtectedRoute>
-            } />
-            <Route path="/verify-profile" element={
-              <ProtectedRoute>
-                <VerifyProfile />
-              </ProtectedRoute>
-            } />
-            <Route path="/upload-documents" element={
-              <ProtectedRoute>
-                <UploadDocuments />
-              </ProtectedRoute>
-            } />
-            <Route path="/profile/:profileId" element={
-              <ProtectedRoute>
-                <ProfileDetails />
-              </ProtectedRoute>
-            } />
+              {/* Protected User Routes */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <HomePage />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile-type" element={
+                <ProtectedRoute>
+                  <ProfileTypeSelection />
+                </ProtectedRoute>
+              } />
+              <Route path="/general-info" element={
+                <ProtectedRoute>
+                  <GeneralInfoCollection />
+                </ProtectedRoute>
+              } />
+              <Route path="/verify-profile" element={
+                <ProtectedRoute>
+                  <VerifyProfile />
+                </ProtectedRoute>
+              } />
+              <Route path="/upload-documents" element={
+                <ProtectedRoute>
+                  <UploadDocuments />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile/:profileId" element={
+                <ProtectedRoute>
+                  <ProfileDetails />
+                </ProtectedRoute>
+              } />
 
-            {/* Protected Admin Routes */}
-            <Route path="/admin" element={
-              <ProtectedRoute adminOnly={true}>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/profile/:profileId" element={
-              <ProtectedRoute adminOnly={true}>
-                <AdminProfileDetails />
-              </ProtectedRoute>
-            } />
-          </Routes>
-        </Router>
-      </ProfileProvider>
+              {/* Protected Admin Routes */}
+              <Route path="/admin" element={
+                <ProtectedRoute adminOnly={true}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/profile/:profileId" element={
+                <ProtectedRoute adminOnly={true}>
+                  <AdminProfileDetails />
+                </ProtectedRoute>
+              } />
+            </Routes>
+          </Router>
+        </ProfileProvider>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

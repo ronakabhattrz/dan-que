@@ -2,8 +2,11 @@ import { Navigate } from 'react-router-dom'
 import { useAuthContext } from '../context/AuthContext'
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
-    const { user, loading, isAdmin } = useAuthContext()
+    const { user, loading, isAdmin } = useAuthContext();
+    console.log('[DEBUG] ProtectedRoute render:', { loading, hasUser: !!user, isAdmin, adminOnly });
 
+    // REMOVED blocking loading state to prevent hanging the whole app
+    /*
     if (loading) {
         return (
             <div style={{
@@ -19,11 +22,12 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
                     borderRadius: 'var(--radius-lg)',
                     border: '1px solid var(--surface-glass-border)'
                 }}>
-                    Loading...
+                    Loading (Auth Status)...
                 </div>
             </div>
         )
     }
+    */
 
     if (!user) {
         return <Navigate to="/login" replace />

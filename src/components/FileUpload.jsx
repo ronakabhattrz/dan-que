@@ -24,14 +24,21 @@ const FileUpload = ({ onFileSelect, accept = '*', multiple = false, label = 'Upl
     };
 
     const handleFileInput = (e) => {
-        const files = Array.from(e.target.files);
+        const files = Array.from(e.target.files || []);
         handleFiles(files);
     };
 
     const handleFiles = (files) => {
+        if (files.length === 0) return;
+
         setSelectedFiles(files);
         if (onFileSelect) {
             onFileSelect(files);
+        }
+
+        // Reset the file input so the same file can be selected again if needed
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
         }
     };
 

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProfile } from '../../context/ProfileContext';
+import { profileService } from '../../services/profileService';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import '../../index.css';
@@ -8,29 +9,118 @@ import '../../index.css';
 const AdminProfileDetails = () => {
     const { profileId } = useParams();
     const navigate = useNavigate();
-    const { getProfileById, updateProfileStatus } = useProfile();
+    const { updateProfileStatus } = useProfile();
 
-    const profile = getProfileById(profileId);
+    const [profile, setProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                setLoading(true);
+                const data = await profileService.getProfileById(profileId);
+                setProfile(data);
+            } catch (error) {
+                console.error('Error fetching profile:', error);
+                alert('Failed to load profile details.');
+                navigate('/admin');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (profileId) {
+            fetchProfile();
+        }
+    }, [profileId, navigate]);
+
+    const handleStatusChange = async (newStatus) => {
+        try {
+            setSaving(true);
+            await updateProfileStatus(profileId, newStatus);
+            // Refresh local state
+            const updatedProfile = await profileService.getProfileById(profileId);
+            setProfile(updatedProfile);
+        } catch (error) {
+            console.error('Error updating status:', error);
+            alert('Failed to update profile status.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="container" style={{ paddingTop: 'var(--spacing-3xl)', textAlign: 'center' }}>
+                <div className="spinner" style={{ margin: '0 auto var(--spacing-md)' }}></div>
+                <p>Loading profile details...</p>
+            </div>
+        );
+    }
 
     if (!profile) {
         return (
             <div className="container" style={{ paddingTop: 'var(--spacing-3xl)' }}>
                 <Card>
-                    <h2>Profile not found</h2>
-                    <Button onClick={() => navigate('/admin')}>Back to Dashboard</Button>
+                    <div style={{ textAlign: 'center', padding: 'var(--spacing-xl)' }}>
+                        <h2 style={{ marginBottom: 'var(--spacing-md)' }}>Profile not found</h2>
+                        <Button onClick={() => navigate('/admin')}>Back to Dashboard</Button>
+                    </div>
                 </Card>
             </div>
         );
     }
 
-    const handleStatusChange = async (newStatus) => {
-        try {
-            await updateProfileStatus(profileId, newStatus);
-            navigate('/admin');
-        } catch (error) {
-            console.error('Error updating status:', error);
-            alert('Failed to update profile status. Please try again.');
-        }
+    const renderDataSection = (title, data) => {
+        if (!data || Object.keys(data).length === 0) return null;
+
+        const filteredData = Object.entries(data).filter(([_, value]) => value !== null && value !== '' && value !== undefined);
+        if (filteredData.length === 0) return null;
+
+        return (
+            <Card className="mb-lg">
+                <h3 style={{
+                    fontSize: '0.75rem',
+                    fontWeight: '700',
+                    color: 'var(--text-tertiary)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    marginBottom: 'var(--spacing-lg)',
+                    paddingLeft: 'var(--spacing-xs)',
+                    borderLeft: '3px solid var(--text-primary)'
+                }}>
+                    {title}
+                </h3>
+                <div style={{ display: 'grid', gap: 'var(--spacing-md)' }}>
+                    {filteredData.map(([key, value]) => (
+                        <div key={key} style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            paddingBottom: 'var(--spacing-sm)',
+                            borderBottom: '1px solid var(--surface-glass-border)'
+                        }}>
+                            <span style={{
+                                fontSize: '0.65rem',
+                                fontWeight: '600',
+                                color: 'var(--text-tertiary)',
+                                textTransform: 'uppercase',
+                                marginBottom: '2px'
+                            }}>
+                                {key.replace(/_/g, ' ')}
+                            </span>
+                            <span style={{
+                                fontSize: '1rem',
+                                color: 'var(--text-primary)',
+                                fontWeight: '500'
+                            }}>
+                                {typeof value === 'object' ? JSON.stringify(value, null, 2) : value.toString()}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </Card>
+        );
     };
 
     return (
@@ -40,136 +130,166 @@ const AdminProfileDetails = () => {
         }}>
             <div className="fade-in">
                 <div className="flex justify-between items-center mb-xl">
-                    <h1>Profile Details</h1>
-                    <Button variant="secondary" onClick={() => navigate('/admin')}>
-                        ← Back to Dashboard
+                    <div>
+                        <h1 style={{ marginBottom: 'var(--spacing-xs)' }}>Review Profile</h1>
+                        <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
+                            {profile.type === 'personal' ? '👤 Personal Profile' : '🏢 Business Profile'} • {profile.id}
+                        </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/admin')}>
+                        ← Back
                     </Button>
                 </div>
 
-                {/* Profile Status */}
-                <Card className="mb-lg">
+                {/* Status Banner */}
+                <Card className="mb-lg" style={{
+                    background: profile.status === 'verified' ? 'var(--success-glass)' :
+                        profile.status === 'rejected' ? 'var(--error-glass)' :
+                            profile.status === 'pending' ? 'var(--warning-glass)' : 'var(--surface-glass)',
+                    borderColor: 'transparent'
+                }}>
                     <div className="flex justify-between items-center">
-                        <div>
-                            <h2 style={{ fontSize: '1.5rem', marginBottom: 'var(--spacing-sm)' }}>
-                                {profile.name || profile.business_name || 'Unnamed Profile'}
-                            </h2>
-                            <div style={{ color: 'var(--text-secondary)' }}>
-                                ID: {profile.id} • Type: {profile.type === 'personal' ? 'Personal' : 'Business'}
-                            </div>
+                        <div className="flex items-center gap-md">
+                            <div style={{
+                                width: '12px',
+                                height: '12px',
+                                borderRadius: '50%',
+                                background: profile.status === 'verified' ? 'var(--success)' :
+                                    profile.status === 'rejected' ? 'var(--error)' :
+                                        profile.status === 'pending' ? 'var(--warning)' : 'var(--text-tertiary)'
+                            }}></div>
+                            <span style={{ fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                Status: {profile.status}
+                            </span>
                         </div>
-                        <span className={`badge badge-${profile.status === 'verified' ? 'success' :
-                            profile.status === 'pending' ? 'warning' :
-                                profile.status === 'rejected' ? 'error' : 'secondary'
-                            }`} style={{ fontSize: '1rem', padding: 'var(--spacing-sm) var(--spacing-md)' }}>
-                            {profile.status}
-                        </span>
+                        <div className="flex gap-sm">
+                            <Button
+                                variant="success"
+                                size="sm"
+                                onClick={() => handleStatusChange('verified')}
+                                disabled={saving || profile.status === 'verified'}
+                            >
+                                Approve
+                            </Button>
+                            <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleStatusChange('rejected')}
+                                disabled={saving || profile.status === 'rejected'}
+                            >
+                                Reject
+                            </Button>
+                        </div>
                     </div>
                 </Card>
 
-                {/* General Information */}
-                <Card className="mb-lg">
-                    <h3 style={{ fontSize: '1.25rem', marginBottom: 'var(--spacing-lg)' }}>
-                        General Information
-                    </h3>
-                    <div style={{
-                        background: 'var(--surface-glass)',
-                        borderRadius: 'var(--radius-md)',
-                        padding: 'var(--spacing-lg)',
-                        border: '1px solid var(--surface-glass-border)'
-                    }}>
-                        {profile.name && (
-                            <div className="flex justify-between" style={{
-                                marginBottom: 'var(--spacing-sm)',
-                                paddingBottom: 'var(--spacing-sm)',
-                                borderBottom: '1px solid var(--surface-glass-border)'
-                            }}>
-                                <span style={{ color: 'var(--text-secondary)' }}>Name:</span>
-                                <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{profile.name}</span>
-                            </div>
-                        )}
-                        {profile.business_name && (
-                            <div className="flex justify-between" style={{
-                                marginBottom: 'var(--spacing-sm)',
-                                paddingBottom: 'var(--spacing-sm)',
-                                borderBottom: '1px solid var(--surface-glass-border)'
-                            }}>
-                                <span style={{ color: 'var(--text-secondary)' }}>Business Name:</span>
-                                <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{profile.business_name}</span>
-                            </div>
-                        )}
-                        {profile.address && (
-                            <div className="flex justify-between" style={{
-                                marginBottom: 'var(--spacing-sm)',
-                                paddingBottom: 'var(--spacing-sm)',
-                                borderBottom: '1px solid var(--surface-glass-border)'
-                            }}>
-                                <span style={{ color: 'var(--text-secondary)' }}>Address:</span>
-                                <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{profile.address}</span>
-                            </div>
-                        )}
-                        {profile.phone && (
-                            <div className="flex justify-between" style={{
-                                marginBottom: 'var(--spacing-sm)',
-                                paddingBottom: 'var(--spacing-sm)',
-                                borderBottom: '1px solid var(--surface-glass-border)'
-                            }}>
-                                <span style={{ color: 'var(--text-secondary)' }}>Phone:</span>
-                                <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{profile.phone}</span>
-                            </div>
-                        )}
-                        {profile.email && (
-                            <div className="flex justify-between" style={{
-                                marginBottom: 'var(--spacing-sm)',
-                                paddingBottom: 'var(--spacing-sm)',
-                                borderBottom: '1px solid var(--surface-glass-border)'
-                            }}>
-                                <span style={{ color: 'var(--text-secondary)' }}>Email:</span>
-                                <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{profile.email}</span>
-                            </div>
-                        )}
-                        {profile.ein && (
-                            <div className="flex justify-between" style={{ marginBottom: '0' }}>
-                                <span style={{ color: 'var(--text-secondary)' }}>EIN:</span>
-                                <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{profile.ein}</span>
-                            </div>
-                        )}
-                    </div>
-                </Card>
+                {/* Core Info */}
+                {renderDataSection('Personal Information', {
+                    first_name: profile.first_name,
+                    last_name: profile.last_name,
+                    preferred_name: profile.preferred_name,
+                    email: profile.email,
+                    phone: profile.phone,
+                    ssn: profile.ssn ? '***-**-' + profile.ssn.slice(-4) : null,
+                    date_of_birth: profile.dob,
+                    mailing_address: profile.mailing_address,
+                    residency_state: profile.residency_state
+                })}
+
+                {profile.type === 'business' && renderDataSection('Business Information', {
+                    business_name: profile.business_name,
+                    ein: profile.ein,
+                    has_business: profile.has_business ? 'Yes' : 'No'
+                })}
+
+                {renderDataSection('Identification Details', profile.dl_details)}
+
+                {renderDataSection('Household & Tax', {
+                    marital_status: profile.marital_status,
+                    spouse_info: profile.spouse_info,
+                    dependents: profile.dependents,
+                    tax_responses: profile.tax_responses,
+                    tax_financials: profile.tax_financials
+                })}
 
                 {/* Documents */}
                 <Card className="mb-lg">
-                    <h3 style={{ fontSize: '1.25rem', marginBottom: 'var(--spacing-lg)' }}>
+                    <h3 style={{
+                        fontSize: '0.75rem',
+                        fontWeight: '700',
+                        color: 'var(--text-tertiary)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px',
+                        marginBottom: 'var(--spacing-lg)',
+                        paddingLeft: 'var(--spacing-xs)',
+                        borderLeft: '3px solid var(--text-primary)'
+                    }}>
                         Uploaded Documents
                     </h3>
                     {profile.documents && profile.documents.length > 0 ? (
-                        <div style={{
-                            background: 'var(--surface-glass)',
-                            borderRadius: 'var(--radius-md)',
-                            padding: 'var(--spacing-lg)',
-                            border: '1px solid var(--surface-glass-border)'
-                        }}>
+                        <div style={{ display: 'grid', gap: 'var(--spacing-md)' }}>
                             {profile.documents.map((doc) => (
                                 <div key={doc.id} style={{
-                                    marginBottom: 'var(--spacing-md)',
-                                    paddingBottom: 'var(--spacing-md)',
-                                    borderBottom: '1px solid var(--surface-glass-border)'
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: 'var(--spacing-md)',
+                                    background: 'var(--surface-glass)',
+                                    borderRadius: 'var(--radius-md)',
+                                    border: '1px solid var(--surface-glass-border)'
                                 }}>
-                                    <div style={{
-                                        color: 'var(--text-primary)',
-                                        fontWeight: '600',
-                                        marginBottom: 'var(--spacing-xs)'
-                                    }}>
-                                        {doc.type}
+                                    <div className="flex items-center gap-md">
+                                        <div style={{
+                                            width: '48px',
+                                            height: '48px',
+                                            background: 'var(--gray-100)',
+                                            borderRadius: 'var(--radius-sm)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            overflow: 'hidden',
+                                            border: '1px solid var(--surface-glass-border)'
+                                        }}>
+                                            {(() => {
+                                                const isImage = doc.type?.startsWith('image/') ||
+                                                    doc.name?.toLowerCase().endsWith('.jpg') ||
+                                                    doc.name?.toLowerCase().endsWith('.jpeg') ||
+                                                    doc.name?.toLowerCase().endsWith('.png') ||
+                                                    doc.name?.toLowerCase().endsWith('.gif') ||
+                                                    doc.name?.toLowerCase().endsWith('.webp');
+
+                                                if (isImage) {
+                                                    return <img src={doc.file_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />;
+                                                }
+                                                return <span style={{ fontSize: '1.5rem' }}>📄</span>;
+                                            })()}
+                                        </div>
+                                        <div>
+                                            <div style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '0.875rem' }}>
+                                                {doc.name}
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                                                {doc.type} • {(doc.file_size / 1024).toFixed(1)} KB
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div style={{
-                                        fontSize: '0.875rem',
-                                        color: 'var(--text-secondary)'
-                                    }}>
-                                        Uploaded: {new Date(doc.uploaded_at).toLocaleString()}
-                                    </div>
-                                    <div style={{ marginTop: 'var(--spacing-sm)', fontSize: '0.875rem', color: 'var(--text-tertiary)' }}>
-                                        {doc.name} ({(doc.file_size / 1024).toFixed(2)} KB)
-                                    </div>
+                                    <a
+                                        href={doc.file_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                            color: 'var(--text-primary)',
+                                            textDecoration: 'none',
+                                            fontSize: '0.75rem',
+                                            fontWeight: '700',
+                                            textTransform: 'uppercase',
+                                            padding: 'var(--spacing-xs) var(--spacing-sm)',
+                                            border: '1px solid var(--text-primary)',
+                                            borderRadius: 'var(--radius-sm)'
+                                        }}
+                                    >
+                                        View Full
+                                    </a>
                                 </div>
                             ))}
                         </div>
@@ -177,84 +297,26 @@ const AdminProfileDetails = () => {
                         <div style={{
                             textAlign: 'center',
                             padding: 'var(--spacing-xl)',
-                            color: 'var(--text-secondary)'
+                            color: 'var(--text-tertiary)',
+                            background: 'var(--surface-glass)',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px dashed var(--surface-glass-border)'
                         }}>
-                            No documents uploaded yet
+                            No documents uploaded.
                         </div>
                     )}
                 </Card>
 
                 {/* Metadata */}
-                <Card className="mb-xl">
-                    <h3 style={{ fontSize: '1.25rem', marginBottom: 'var(--spacing-lg)' }}>
-                        Metadata
-                    </h3>
-                    <div style={{
-                        background: 'var(--surface-glass)',
-                        borderRadius: 'var(--radius-md)',
-                        padding: 'var(--spacing-lg)',
-                        border: '1px solid var(--surface-glass-border)',
-                        fontSize: '0.875rem'
-                    }}>
-                        <div className="flex justify-between mb-sm">
-                            <span style={{ color: 'var(--text-secondary)' }}>Created:</span>
-                            <span style={{ color: 'var(--text-primary)' }}>
-                                {new Date(profile.created_at).toLocaleString()}
-                            </span>
-                        </div>
-                        {profile.updated_at && (
-                            <div className="flex justify-between mb-sm">
-                                <span style={{ color: 'var(--text-secondary)' }}>Last Updated:</span>
-                                <span style={{ color: 'var(--text-primary)' }}>
-                                    {new Date(profile.updated_at).toLocaleString()}
-                                </span>
-                            </div>
-                        )}
-                        <div className="flex justify-between">
-                            <span style={{ color: 'var(--text-secondary)' }}>Verified:</span>
-                            <span style={{ color: 'var(--text-primary)' }}>
-                                {profile.verified ? 'Yes' : 'No'}
-                            </span>
-                        </div>
-                    </div>
-                </Card>
-
-                {/* Actions */}
-                <Card>
-                    <h3 style={{ fontSize: '1.25rem', marginBottom: 'var(--spacing-lg)' }}>
-                        Admin Actions
-                    </h3>
-                    <div className="flex gap-md" style={{ flexWrap: 'wrap' }}>
-                        <Button
-                            variant="success"
-                            onClick={() => handleStatusChange('verified')}
-                            disabled={profile.status === 'verified'}
-                        >
-                            ✓ Approve Profile
-                        </Button>
-                        <Button
-                            variant="danger"
-                            onClick={() => handleStatusChange('rejected')}
-                            disabled={profile.status === 'rejected'}
-                        >
-                            ✗ Reject Profile
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            onClick={() => handleStatusChange('pending')}
-                            disabled={profile.status === 'pending'}
-                        >
-                            ⟳ Mark as Pending
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            onClick={() => handleStatusChange('draft')}
-                            disabled={profile.status === 'draft'}
-                        >
-                            📝 Mark as Draft
-                        </Button>
-                    </div>
-                </Card>
+                <div style={{
+                    padding: 'var(--spacing-lg)',
+                    textAlign: 'center',
+                    color: 'var(--text-tertiary)',
+                    fontSize: '0.75rem'
+                }}>
+                    Created on {new Date(profile.created_at).toLocaleString()}
+                    {profile.updated_at && ` • Last updated ${new Date(profile.updated_at).toLocaleString()}`}
+                </div>
             </div>
         </div>
     );

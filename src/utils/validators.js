@@ -123,19 +123,55 @@ export const validateAddress = (address) => {
 };
 
 /**
+ * Validates SSN format (XXX-XX-XXXX)
+ */
+export const validateSSN = (ssn) => {
+    const trimmed = ssn?.trim() || '';
+    if (!trimmed) return { isValid: false, error: 'SSN is required' };
+    const digitsOnly = trimmed.replace(/\D/g, '');
+    if (digitsOnly.length !== 9) {
+        return { isValid: false, error: 'SSN must be 9 digits' };
+    }
+    return { isValid: true, error: '' };
+};
+
+/**
+ * Validates Date of Birth (must be in past)
+ */
+export const validateDOB = (dob) => {
+    if (!dob) return { isValid: false, error: 'Date of Birth is required' };
+    const date = new Date(dob);
+    if (isNaN(date.getTime())) return { isValid: false, error: 'Invalid date format' };
+    if (date > new Date()) return { isValid: false, error: 'Date of Birth cannot be in the future' };
+    return { isValid: true, error: '' };
+};
+
+/**
  * Master validator that routes to appropriate validator based on field type
  */
 export const validateField = (fieldId, value, profileType) => {
+    // Handle nested fields or specific tax identifiers
+    if (fieldId.includes('ssn') || fieldId === 'SSN') return validateSSN(value);
+    if (fieldId.includes('dob') || fieldId === 'DOB') return validateDOB(value);
+
     switch (fieldId) {
         case 'name':
+        case 'first_name':
+        case 'last_name':
+        case 'firstName':
+        case 'lastName':
             return validateName(value, 'Name');
         case 'businessName':
+        case 'business_name':
             return validateName(value, 'Business Name');
         case 'address':
+        case 'mailing_address':
             return validateAddress(value);
         case 'phone':
+        case 'business_phone':
             return validatePhone(value);
         case 'email':
+        case 'business_email':
             return validateEmail(value);
         case 'ein':
             return validateEIN(value);

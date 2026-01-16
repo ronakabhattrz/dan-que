@@ -8,10 +8,17 @@ import '../index.css';
 
 const HomePage = () => {
     const navigate = useNavigate();
-    const { profiles } = useProfile();
+    const { profiles, getProfileCounts, canCreateProfile } = useProfile();
     const { user, signOut } = useAuthContext();
+    const { personalCount, businessCount } = getProfileCounts();
+
+    const canCreateAny = canCreateProfile('personal') || canCreateProfile('business');
 
     const handleNewProfile = () => {
+        if (!canCreateAny) {
+            alert('You have reached the maximum number of profiles (1 personal + 1 business). Please delete an existing profile to create a new one.');
+            return;
+        }
         navigate('/profile-type');
     };
 
@@ -119,6 +126,19 @@ const HomePage = () => {
                             ))}
                         </div>
                     )}
+
+                    {/* Profile Count Status */}
+                    <div style={{
+                        padding: 'var(--spacing-md)',
+                        background: 'var(--surface-glass)',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--surface-glass-border)',
+                        marginTop: 'var(--spacing-md)'
+                    }}>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0' }}>
+                            <strong style={{ color: 'var(--text-primary)' }}>Profile Status:</strong> {personalCount}/1 Personal, {businessCount}/1 Business
+                        </p>
+                    </div>
                 </Card>
 
                 <div className="grid grid-4" style={{ marginBottom: 'var(--spacing-xl)' }}>
@@ -150,16 +170,17 @@ const HomePage = () => {
                         style={{
                             textAlign: 'center',
                             padding: 'var(--spacing-lg)',
-                            cursor: 'pointer',
-                            background: 'linear-gradient(135deg, var(--primary-500), var(--accent-500))',
-                            border: 'none'
+                            cursor: canCreateAny ? 'pointer' : 'not-allowed',
+                            background: canCreateAny ? 'var(--primary-600)' : 'var(--gray-400)',
+                            border: 'none',
+                            opacity: canCreateAny ? 1 : 0.6
                         }}
                         onClick={handleNewProfile}
                     >
                         <div style={{ fontSize: '2rem', marginBottom: 'var(--spacing-sm)' }}>➕</div>
                         <h3 style={{ fontSize: '1rem', marginBottom: '0', color: 'white' }}>New Profile</h3>
                         <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0' }}>
-                            Create New
+                            {canCreateAny ? 'Create New' : 'Limit Reached'}
                         </p>
                     </Card>
                 </div>

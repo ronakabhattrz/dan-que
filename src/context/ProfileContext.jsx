@@ -36,10 +36,19 @@ export const ProfileProvider = ({ children }) => {
     try {
       setLoading(true);
       const data = await profileService.getUserProfiles(user.id);
-      // Map business_name to businessName for frontend consistency
+      // Map fields for frontend consistency
       const mappedData = data.map(p => ({
         ...p,
-        businessName: p.businessName || p.business_name
+        businessName: p.business_name || p.businessName,
+        firstName: p.first_name || p.firstName,
+        lastName: p.last_name || p.lastName,
+        mailingAddress: p.mailing_address || p.mailingAddress,
+        residencyState: p.residency_state || p.residencyState,
+        hasDL: !!p.dl_details?.serial_number ? 'Yes' : 'No',
+        dl_serial: p.dl_details?.serial_number || '',
+        dl_issue_date: p.dl_details?.issue_date || '',
+        dl_expiry_date: p.dl_details?.expiry_date || '',
+        dl_backside_code: p.dl_details?.backside_code || ''
       }));
       setProfiles(mappedData);
     } catch (error) {
@@ -51,6 +60,18 @@ export const ProfileProvider = ({ children }) => {
 
   const createProfile = async (type) => {
     if (!user) throw new Error('User must be authenticated');
+
+    // Check profile limits
+    const personalCount = profiles.filter(p => p.type === 'personal').length;
+    const businessCount = profiles.filter(p => p.type === 'business').length;
+
+    if (type === 'personal' && personalCount >= 1) {
+      throw new Error('You can only create 1 personal profile. Please delete your existing personal profile to create a new one.');
+    }
+
+    if (type === 'business' && businessCount >= 1) {
+      throw new Error('You can only create 1 business profile. Please delete your existing business profile to create a new one.');
+    }
 
     try {
       const newProfile = await profileService.createProfile(user.id, type);
@@ -68,9 +89,89 @@ export const ProfileProvider = ({ children }) => {
     if (!currentProfile) return;
 
     try {
-      const updated = await profileService.updateProfile(currentProfile.id, info);
-      setCurrentProfile(updated);
-      await loadUserProfiles(); // Refresh profiles list
+      // Clean data before sending to Supabase - convert camelCase to snake_case
+      const cleanInfo = { ...info };
+
+      // Map and remove camelCase fields
+      if (cleanInfo.businessName) {
+        cleanInfo.business_name = cleanInfo.businessName;
+        delete cleanInfo.businessName;
+      }
+      if (cleanInfo.firstName) {
+        cleanInfo.first_name = cleanInfo.firstName;
+        delete cleanInfo.firstName;
+      }
+      if (cleanInfo.lastName) {
+        cleanInfo.last_name = cleanInfo.lastName;
+        delete cleanInfo.lastName;
+      }
+      if (cleanInfo.preferredName) {
+        cleanInfo.preferred_name = cleanInfo.preferredName;
+        delete cleanInfo.preferredName;
+      }
+      if (cleanInfo.mailingAddress) {
+        cleanInfo.mailing_address = cleanInfo.mailingAddress;
+        delete cleanInfo.mailingAddress;
+      }
+      if (cleanInfo.residencyState) {
+        cleanInfo.residency_state = cleanInfo.residencyState;
+        delete cleanInfo.residencyState;
+      }
+      if (cleanInfo.maritalStatus) {
+        cleanInfo.marital_status = cleanInfo.maritalStatus;
+        delete cleanInfo.maritalStatus;
+      }
+      if (cleanInfo.spouseInfo) {
+        cleanInfo.spouse_info = cleanInfo.spouseInfo;
+        delete cleanInfo.spouseInfo;
+      }
+      if (cleanInfo.carriesBusiness !== undefined) {
+        cleanInfo.has_business = cleanInfo.carriesBusiness === 'Yes';
+        delete cleanInfo.carriesBusiness;
+      }
+
+      // Cleanup derived/UI-only fields
+      delete cleanInfo.numDependents;
+      delete cleanInfo.hasDL;
+      delete cleanInfo.hasEIN;
+
+      // Wrap DL details
+      if (cleanInfo.dl_serial || cleanInfo.dl_issue_date || cleanInfo.dl_expiry_date || cleanInfo.dl_backside_code) {
+        cleanInfo.dl_details = {
+          ...(currentProfile.dl_details || {}),
+          serial_number: cleanInfo.dl_serial || currentProfile.dl_details?.serial_number,
+          issue_date: cleanInfo.dl_issue_date || currentProfile.dl_details?.issue_date,
+          expiry_date: cleanInfo.dl_expiry_date || currentProfile.dl_details?.expiry_date,
+          backside_code: cleanInfo.dl_backside_code || currentProfile.dl_details?.backside_code
+        };
+        delete cleanInfo.dl_serial;
+        delete cleanInfo.dl_issue_date;
+        delete cleanInfo.dl_expiry_date;
+        delete cleanInfo.dl_backside_code;
+      }
+
+      const updated = await profileService.updateProfile(currentProfile.id, cleanInfo);
+
+      // Refresh list to stay in sync
+      await loadUserProfiles();
+
+      // Update current profile with re-mapped data
+      const data = await profileService.getProfileById(currentProfile.id);
+      const mappedUpdated = {
+        ...data,
+        businessName: data.business_name || data.businessName,
+        firstName: data.first_name || data.firstName,
+        lastName: data.last_name || data.lastName,
+        mailingAddress: data.mailing_address || data.mailingAddress,
+        residencyState: data.residency_state || data.residencyState,
+        hasDL: !!data.dl_details?.serial_number ? 'Yes' : 'No',
+        dl_serial: data.dl_details?.serial_number || '',
+        dl_issue_date: data.dl_details?.issue_date || '',
+        dl_expiry_date: data.dl_details?.expiry_date || '',
+        dl_backside_code: data.dl_details?.backside_code || ''
+      };
+
+      setCurrentProfile(mappedUpdated);
     } catch (error) {
       console.error('Error updating profile:', error);
       throw error;
@@ -149,6 +250,19 @@ export const ProfileProvider = ({ children }) => {
     return profiles.find(p => p.id === profileId);
   };
 
+  const getProfileCounts = () => {
+    const personalCount = profiles.filter(p => p.type === 'personal').length;
+    const businessCount = profiles.filter(p => p.type === 'business').length;
+    return { personalCount, businessCount };
+  };
+
+  const canCreateProfile = (type) => {
+    const { personalCount, businessCount } = getProfileCounts();
+    if (type === 'personal') return personalCount < 1;
+    if (type === 'business') return businessCount < 1;
+    return false;
+  };
+
   const value = {
     profiles,
     currentProfile,
@@ -164,7 +278,9 @@ export const ProfileProvider = ({ children }) => {
     updateProfileStatus,
     getProfileById,
     setCurrentProfile,
-    loadUserProfiles
+    loadUserProfiles,
+    getProfileCounts,
+    canCreateProfile
   };
 
   return (

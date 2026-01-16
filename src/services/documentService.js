@@ -3,9 +3,13 @@ import { supabase } from '../lib/supabase'
 export const documentService = {
     // Upload document
     async uploadDocument(profileId, file) {
+        // Get current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) throw new Error('User not authenticated');
+
         // Upload file to Supabase Storage
         const fileExt = file.name.split('.').pop()
-        const fileName = `${profileId}/${Date.now()}.${fileExt}`
+        const fileName = `${user.id}/${profileId}/${Date.now()}.${fileExt}`
 
         const { data: uploadData, error: uploadError } = await supabase.storage
             .from('documents')
@@ -49,6 +53,7 @@ export const documentService = {
 
         if (doc) {
             // Extract file path from URL
+            // The URL looks like .../storage/v1/object/public/documents/USER_ID/PROFILE_ID/FILENAME
             const urlParts = doc.file_url.split('/documents/')
             if (urlParts.length > 1) {
                 const filePath = urlParts[1]

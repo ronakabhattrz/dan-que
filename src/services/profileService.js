@@ -71,6 +71,20 @@ export const profileService = {
         if (error) throw error
     },
 
+    // Get all profiles (admin)
+    async getAllProfiles() {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select(`
+        *,
+        documents (*)
+      `)
+            .order('created_at', { ascending: false })
+
+        if (error) throw error
+        return data
+    },
+
     // Get all pending profiles (admin)
     async getPendingProfiles() {
         const { data, error } = await supabase

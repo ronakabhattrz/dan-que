@@ -7,17 +7,37 @@ import '../index.css';
 
 const ProfileTypeSelection = () => {
     const navigate = useNavigate();
-    const { createProfile } = useProfile();
+    const { createProfile, canCreateProfile, getProfileCounts, profiles } = useProfile();
+    const { personalCount, businessCount } = getProfileCounts();
 
     const handleSelectType = async (type) => {
+        if (!canCreateProfile(type)) {
+            alert(`You already have a ${type} profile. You can only create 1 ${type} profile. Please delete your existing one to create a new one.`);
+            return;
+        }
+
         try {
             await createProfile(type);
             navigate('/general-info');
         } catch (error) {
             console.error('Error creating profile:', error);
-            alert('Failed to create profile. Please try again.');
+            alert(error.message || 'Failed to create profile. Please try again.');
         }
     };
+
+    const handleEditProfile = (type) => {
+        // Find the existing profile of this type
+        const existingProfile = profiles.find(p => p.type === type);
+        if (existingProfile) {
+            navigate(`/profile/${existingProfile.id}`);
+        }
+    };
+
+    const canCreatePersonal = canCreateProfile('personal');
+    const canCreateBusiness = canCreateProfile('business');
+
+    const existingPersonalProfile = profiles.find(p => p.type === 'personal');
+    const existingBusinessProfile = profiles.find(p => p.type === 'business');
 
     return (
         <div className="container container-sm" style={{
@@ -33,12 +53,13 @@ const ProfileTypeSelection = () => {
 
                 <div className="grid grid-2 gap-lg mb-xl">
                     <Card
-                        onClick={() => handleSelectType('personal')}
+                        onClick={() => canCreatePersonal && handleSelectType('personal')}
                         style={{
-                            cursor: 'pointer',
+                            cursor: canCreatePersonal ? 'pointer' : 'default',
                             textAlign: 'center',
                             padding: 'var(--spacing-2xl)',
-                            transition: 'all var(--transition-base)'
+                            transition: 'all var(--transition-base)',
+                            position: 'relative'
                         }}
                     >
                         <div style={{ fontSize: '4rem', marginBottom: 'var(--spacing-md)' }}>👤</div>
@@ -46,15 +67,41 @@ const ProfileTypeSelection = () => {
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '0' }}>
                             For individual profiles using Social Security Number
                         </p>
+                        {!canCreatePersonal && existingPersonalProfile && (
+                            <div style={{
+                                marginTop: 'var(--spacing-md)',
+                                padding: 'var(--spacing-sm)',
+                                background: 'var(--surface-glass)',
+                                borderRadius: 'var(--radius-sm)',
+                                fontSize: '0.875rem',
+                                color: 'var(--text-tertiary)'
+                            }}>
+                                <div style={{ marginBottom: 'var(--spacing-xs)' }}>
+                                    Limit reached ({personalCount}/1)
+                                </div>
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditProfile('personal');
+                                    }}
+                                    style={{ marginTop: 'var(--spacing-xs)' }}
+                                >
+                                    Edit Existing Profile
+                                </Button>
+                            </div>
+                        )}
                     </Card>
 
                     <Card
-                        onClick={() => handleSelectType('business')}
+                        onClick={() => canCreateBusiness && handleSelectType('business')}
                         style={{
-                            cursor: 'pointer',
+                            cursor: canCreateBusiness ? 'pointer' : 'default',
                             textAlign: 'center',
                             padding: 'var(--spacing-2xl)',
-                            transition: 'all var(--transition-base)'
+                            transition: 'all var(--transition-base)',
+                            position: 'relative'
                         }}
                     >
                         <div style={{ fontSize: '4rem', marginBottom: 'var(--spacing-md)' }}>🏢</div>
@@ -62,6 +109,31 @@ const ProfileTypeSelection = () => {
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '0' }}>
                             For business profiles using Employer Identification Number
                         </p>
+                        {!canCreateBusiness && existingBusinessProfile && (
+                            <div style={{
+                                marginTop: 'var(--spacing-md)',
+                                padding: 'var(--spacing-sm)',
+                                background: 'var(--surface-glass)',
+                                borderRadius: 'var(--radius-sm)',
+                                fontSize: '0.875rem',
+                                color: 'var(--text-tertiary)'
+                            }}>
+                                <div style={{ marginBottom: 'var(--spacing-xs)' }}>
+                                    Limit reached ({businessCount}/1)
+                                </div>
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditProfile('business');
+                                    }}
+                                    style={{ marginTop: 'var(--spacing-xs)' }}
+                                >
+                                    Edit Existing Profile
+                                </Button>
+                            </div>
+                        )}
                     </Card>
                 </div>
 
@@ -79,10 +151,10 @@ const ProfileTypeSelection = () => {
                     border: '1px solid var(--surface-glass-border)'
                 }}>
                     <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-sm)' }}>
-                        <strong style={{ color: 'var(--text-primary)' }}>Note:</strong> Depending on what button clicked, a specific question list will be populated in the next page.
+                        <strong style={{ color: 'var(--text-primary)' }}>Profile Limits:</strong> You can create 1 personal profile and 1 business profile.
                     </p>
                     <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0' }}>
-                        Come to this page any time a new profile needs to be created.
+                        Current: {personalCount}/1 Personal, {businessCount}/1 Business
                     </p>
                 </div>
             </div>

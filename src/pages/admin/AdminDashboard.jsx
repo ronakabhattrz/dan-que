@@ -23,8 +23,8 @@ const AdminDashboard = () => {
     const loadAllProfiles = async () => {
         try {
             setLoading(true);
-            const pending = await profileService.getPendingProfiles();
-            setAllProfiles(pending);
+            const profiles = await profileService.getAllProfiles();
+            setAllProfiles(profiles);
         } catch (error) {
             console.error('Error loading profiles:', error);
         } finally {
@@ -88,88 +88,101 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-4 mb-xl">
-                    <Card hover={false} style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--primary-400)' }}>
+                <div className="grid grid-4 gap-lg mb-xl">
+                    <Card hover={false} style={{ textAlign: 'center', padding: 'var(--spacing-xl)' }}>
+                        <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: 'var(--spacing-xs)' }}>
                             {stats.total}
                         </div>
-                        <div style={{ color: 'var(--text-secondary)' }}>Total Profiles</div>
+                        <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Total Profiles
+                        </div>
                     </Card>
-                    <Card hover={false} style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--warning)' }}>
+                    <Card hover={false} style={{ textAlign: 'center', padding: 'var(--spacing-xl)' }}>
+                        <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--warning)', marginBottom: 'var(--spacing-xs)' }}>
                             {stats.pending}
                         </div>
-                        <div style={{ color: 'var(--text-secondary)' }}>Pending Review</div>
+                        <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Pending Review
+                        </div>
                     </Card>
-                    <Card hover={false} style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--success)' }}>
+                    <Card hover={false} style={{ textAlign: 'center', padding: 'var(--spacing-xl)' }}>
+                        <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--success)', marginBottom: 'var(--spacing-xs)' }}>
                             {stats.verified}
                         </div>
-                        <div style={{ color: 'var(--text-secondary)' }}>Verified</div>
+                        <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Verified
+                        </div>
                     </Card>
-                    <Card hover={false} style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--error)' }}>
+                    <Card hover={false} style={{ textAlign: 'center', padding: 'var(--spacing-xl)' }}>
+                        <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--error)', marginBottom: 'var(--spacing-xs)' }}>
                             {stats.rejected}
                         </div>
-                        <div style={{ color: 'var(--text-secondary)' }}>Rejected</div>
+                        <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Rejected
+                        </div>
                     </Card>
                 </div>
 
                 {/* Filters */}
-                <Card className="mb-lg">
-                    <div className="flex gap-md" style={{ flexWrap: 'wrap' }}>
-                        <Button
-                            variant={filter === 'all' ? 'primary' : 'secondary'}
-                            onClick={() => setFilter('all')}
-                        >
-                            All ({stats.total})
-                        </Button>
-                        <Button
-                            variant={filter === 'pending' ? 'primary' : 'secondary'}
-                            onClick={() => setFilter('pending')}
-                        >
-                            Pending ({stats.pending})
-                        </Button>
-                        <Button
-                            variant={filter === 'verified' ? 'primary' : 'secondary'}
-                            onClick={() => setFilter('verified')}
-                        >
-                            Verified ({stats.verified})
-                        </Button>
-                        <Button
-                            variant={filter === 'rejected' ? 'primary' : 'secondary'}
-                            onClick={() => setFilter('rejected')}
-                        >
-                            Rejected ({stats.rejected})
-                        </Button>
-                        <Button
-                            variant={filter === 'draft' ? 'primary' : 'secondary'}
-                            onClick={() => setFilter('draft')}
-                        >
-                            Draft ({stats.draft})
-                        </Button>
-                    </div>
-                </Card>
+                <div className="mb-lg flex gap-sm" style={{ flexWrap: 'wrap' }}>
+                    <Button
+                        variant={filter === 'all' ? 'primary' : 'outline'}
+                        size="sm"
+                        onClick={() => setFilter('all')}
+                    >
+                        All ({stats.total})
+                    </Button>
+                    <Button
+                        variant={filter === 'pending' ? 'primary' : 'outline'}
+                        size="sm"
+                        onClick={() => setFilter('pending')}
+                    >
+                        Pending ({stats.pending})
+                    </Button>
+                    <Button
+                        variant={filter === 'verified' ? 'primary' : 'outline'}
+                        size="sm"
+                        onClick={() => setFilter('verified')}
+                    >
+                        Verified ({stats.verified})
+                    </Button>
+                    <Button
+                        variant={filter === 'rejected' ? 'primary' : 'outline'}
+                        size="sm"
+                        onClick={() => setFilter('rejected')}
+                    >
+                        Rejected ({stats.rejected})
+                    </Button>
+                </div>
 
                 {/* Profiles Table */}
                 <Card>
-                    <h2 style={{ fontSize: '1.5rem', marginBottom: 'var(--spacing-lg)' }}>
-                        Profiles {filter !== 'all' && `- ${filter.charAt(0).toUpperCase() + filter.slice(1)}`}
-                    </h2>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-lg)' }}>
+                        <h2 style={{ fontSize: '1.25rem', marginBottom: '0' }}>
+                            Profiles {filter !== 'all' && `- ${filter.charAt(0).toUpperCase() + filter.slice(1)}`}
+                        </h2>
+                        <Button variant="outline" size="sm" onClick={loadAllProfiles} disabled={loading}>
+                            {loading ? 'Refreshing...' : '↻ Refresh'}
+                        </Button>
+                    </div>
 
                     {loading ? (
                         <div style={{
                             textAlign: 'center',
-                            padding: 'var(--spacing-2xl)',
+                            padding: 'var(--spacing-3xl)',
                             color: 'var(--text-secondary)'
                         }}>
+                            <div className="spinner" style={{ margin: '0 auto var(--spacing-md)' }}></div>
                             Loading profiles...
                         </div>
                     ) : filteredProfiles.length === 0 ? (
                         <div style={{
                             textAlign: 'center',
-                            padding: 'var(--spacing-2xl)',
-                            color: 'var(--text-secondary)'
+                            padding: 'var(--spacing-3xl)',
+                            color: 'var(--text-tertiary)',
+                            background: 'var(--surface-glass)',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px dashed var(--surface-glass-border)'
                         }}>
                             No profiles found
                         </div>
@@ -177,21 +190,20 @@ const AdminDashboard = () => {
                         <div style={{ overflowX: 'auto' }}>
                             <table style={{
                                 width: '100%',
-                                borderCollapse: 'collapse',
-                                fontSize: '0.875rem'
+                                borderCollapse: 'collapse'
                             }}>
                                 <thead>
                                     <tr style={{
                                         borderBottom: '2px solid var(--surface-glass-border)',
                                         textAlign: 'left'
                                     }}>
-                                        <th style={{ padding: 'var(--spacing-md)', color: 'var(--text-secondary)' }}>ID</th>
-                                        <th style={{ padding: 'var(--spacing-md)', color: 'var(--text-secondary)' }}>Name</th>
-                                        <th style={{ padding: 'var(--spacing-md)', color: 'var(--text-secondary)' }}>Type</th>
-                                        <th style={{ padding: 'var(--spacing-md)', color: 'var(--text-secondary)' }}>Status</th>
-                                        <th style={{ padding: 'var(--spacing-md)', color: 'var(--text-secondary)' }}>Created</th>
-                                        <th style={{ padding: 'var(--spacing-md)', color: 'var(--text-secondary)' }}>Documents</th>
-                                        <th style={{ padding: 'var(--spacing-md)', color: 'var(--text-secondary)' }}>Actions</th>
+                                        <th style={{ padding: 'var(--spacing-md)', color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>ID</th>
+                                        <th style={{ padding: 'var(--spacing-md)', color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>Name</th>
+                                        <th style={{ padding: 'var(--spacing-md)', color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>Type</th>
+                                        <th style={{ padding: 'var(--spacing-md)', color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>Status</th>
+                                        <th style={{ padding: 'var(--spacing-md)', color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>Created</th>
+                                        <th style={{ padding: 'var(--spacing-md)', color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>Docs</th>
+                                        <th style={{ padding: 'var(--spacing-md)', color: 'var(--text-tertiary)', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', textAlign: 'right' }}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -200,12 +212,14 @@ const AdminDashboard = () => {
                                             key={profile.id}
                                             style={{
                                                 borderBottom: '1px solid var(--surface-glass-border)',
-                                                transition: 'background var(--transition-fast)'
+                                                transition: 'background var(--transition-fast)',
+                                                cursor: 'pointer'
                                             }}
+                                            onClick={() => handleViewProfile(profile.id)}
                                             onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-glass)'}
                                             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                                         >
-                                            <td style={{ padding: 'var(--spacing-md)', color: 'var(--text-tertiary)' }}>
+                                            <td style={{ padding: 'var(--spacing-md)', color: 'var(--text-tertiary)', fontFamily: 'monospace' }}>
                                                 {profile.id.slice(0, 8)}
                                             </td>
                                             <td style={{ padding: 'var(--spacing-md)', color: 'var(--text-primary)', fontWeight: '600' }}>
@@ -218,7 +232,7 @@ const AdminDashboard = () => {
                                                 <span className={`badge badge-${profile.status === 'verified' ? 'success' :
                                                     profile.status === 'pending' ? 'warning' :
                                                         profile.status === 'rejected' ? 'error' : 'secondary'
-                                                    }`}>
+                                                    }`} style={{ fontSize: '0.75rem', padding: '2px 8px' }}>
                                                     {profile.status}
                                                 </span>
                                             </td>
@@ -226,35 +240,20 @@ const AdminDashboard = () => {
                                                 {new Date(profile.created_at).toLocaleDateString()}
                                             </td>
                                             <td style={{ padding: 'var(--spacing-md)', color: 'var(--text-secondary)' }}>
-                                                {profile.documents?.length || 0} files
+                                                {profile.documents?.length || 0}
                                             </td>
-                                            <td style={{ padding: 'var(--spacing-md)' }}>
-                                                <div className="flex gap-sm">
+                                            <td style={{ padding: 'var(--spacing-md)', textAlign: 'right' }}>
+                                                <div className="flex gap-sm justify-end">
                                                     <Button
-                                                        variant="secondary"
+                                                        variant="outline"
                                                         size="sm"
-                                                        onClick={() => handleViewProfile(profile.id)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleViewProfile(profile.id);
+                                                        }}
                                                     >
-                                                        View
+                                                        Review
                                                     </Button>
-                                                    {profile.status === 'pending' && (
-                                                        <>
-                                                            <Button
-                                                                variant="success"
-                                                                size="sm"
-                                                                onClick={() => handleQuickAction(profile.id, 'verified')}
-                                                            >
-                                                                ✓
-                                                            </Button>
-                                                            <Button
-                                                                variant="danger"
-                                                                size="sm"
-                                                                onClick={() => handleQuickAction(profile.id, 'rejected')}
-                                                            >
-                                                                ✗
-                                                            </Button>
-                                                        </>
-                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

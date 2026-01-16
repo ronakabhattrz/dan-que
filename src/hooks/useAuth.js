@@ -7,65 +7,119 @@ export const useAuth = () => {
     const [isAdmin, setIsAdmin] = useState(false)
 
     useEffect(() => {
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null)
-            if (session?.user) {
-                checkAdminRole(session.user.id)
-            }
-            setLoading(false)
-        })
+        let mounted = true;
 
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null)
-            if (session?.user) {
-                checkAdminRole(session.user.id)
+        const initializeAuth = async () => {
+            console.log('[DEBUG] initializeAuth: Starting quick fetch...');
+            try {
+                // Initial session fetch - should be fast
+                const { data: { session } } = await supabase.auth.getSession();
+
+                if (!mounted) return;
+
+                if (session) {
+                    setUser(session.user);
+
+                    // Background role check - DON'T AWAIT it here to avoid hanging the UI
+                    supabase
+                        .from('user_roles')
+                        .select('role')
+                        .eq('user_id', session.user.id)
+                        .maybeSingle()
+                        .then(({ data }) => {
+                            if (mounted) {
+                                console.log('[DEBUG] Background role fetch result:', data?.role);
+                                setIsAdmin(data?.role === 'admin');
+                            }
+                        })
+                        .catch(err => console.error('[DEBUG] Background role error:', err));
+                } else {
+                    setUser(null);
+                    setIsAdmin(false);
+                }
+            } catch (error) {
+                console.error('[DEBUG] initializeAuth fail:', error);
+            } finally {
+                // ALWAYS finish loading quickly
+                if (mounted) setLoading(false);
+            }
+        };
+
+        initializeAuth();
+
+        // Listen for all auth events
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('[DEBUG] onAuthStateChange:', event);
+            if (!mounted) return;
+
+            if (session) {
+                setUser(session.user);
+                // Background role fetch for events
+                supabase
+                    .from('user_roles')
+                    .select('role')
+                    .eq('user_id', session.user.id)
+                    .maybeSingle()
+                    .then(({ data }) => {
+                        if (mounted) setIsAdmin(data?.role === 'admin');
+                    });
             } else {
-                setIsAdmin(false)
+                setUser(null);
+                setIsAdmin(false);
+                setLoading(false);
             }
-            setLoading(false)
-        })
+        });
 
-        return () => subscription.unsubscribe()
-    }, [])
+        // Fail-safe to ensure loader always disappears within 2 seconds
+        const failSafe = setTimeout(() => {
+            if (mounted && loading) setLoading(false);
+        }, 2000);
 
-    const checkAdminRole = async (userId) => {
-        const { data } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', userId)
-            .single()
-
-        setIsAdmin(data?.role === 'admin')
-    }
+        return () => {
+            mounted = false;
+            subscription.unsubscribe();
+            clearTimeout(failSafe);
+        };
+    }, []);
 
     const signUp = async (email, password) => {
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
-        })
+        });
 
         if (!error && data.user) {
-            // Create user role entry
             await supabase.from('user_roles').insert({
                 user_id: data.user.id,
                 role: 'user'
-            })
+            });
         }
-
-        return { data, error }
+        return { data, error };
     }
 
     const signIn = async (email, password) => {
         return await supabase.auth.signInWithPassword({
             email,
             password,
-        })
+        });
     }
 
     const signOut = async () => {
-        return await supabase.auth.signOut()
+        console.log('[DEBUG] Sign out initiated');
+        try {
+            await supabase.auth.signOut();
+            setUser(null);
+            setIsAdmin(false);
+            setLoading(false);
+            // Force reload to clear all context states
+            window.location.href = '/login';
+        } catch (error) {
+            console.error('[DEBUG] Sign out error:', error);
+            // Fallback
+            setUser(null);
+            setIsAdmin(false);
+            window.location.href = '/login';
+        }
     }
 
     return {

@@ -1,54 +1,56 @@
 :root {
-  /* Color Palette */
-  --primary-hue: 250;
-  --primary-sat: 80%;
-  --primary-light: 55%;
+  /* Monochrome Color Palette - Black, White, Grey Only */
+  --primary-hue: 0;
+  --primary-sat: 0%;
+  --primary-light: 20%;
 
-  --primary-50: hsl(var(--primary-hue), var(--primary-sat), 95%);
-  --primary-100: hsl(var(--primary-hue), var(--primary-sat), 85%);
-  --primary-200: hsl(var(--primary-hue), var(--primary-sat), 75%);
-  --primary-300: hsl(var(--primary-hue), var(--primary-sat), 65%);
-  --primary-400: hsl(var(--primary-hue), var(--primary-sat), 60%);
-  --primary-500: hsl(var(--primary-hue), var(--primary-sat), var(--primary-light));
-  --primary-600: hsl(var(--primary-hue), var(--primary-sat), 45%);
-  --primary-700: hsl(var(--primary-hue), var(--primary-sat), 35%);
-  --primary-800: hsl(var(--primary-hue), var(--primary-sat), 25%);
-  --primary-900: hsl(var(--primary-hue), var(--primary-sat), 15%);
+  /* Grey Scale - Primary (used for accents) */
+  --primary-50: hsl(0, 0%, 98%);
+  --primary-100: hsl(0, 0%, 95%);
+  --primary-200: hsl(0, 0%, 85%);
+  --primary-300: hsl(0, 0%, 70%);
+  --primary-400: hsl(0, 0%, 50%);
+  --primary-500: hsl(0, 0%, 30%);
+  --primary-600: hsl(0, 0%, 20%);
+  --primary-700: hsl(0, 0%, 15%);
+  --primary-800: hsl(0, 0%, 10%);
+  --primary-900: hsl(0, 0%, 5%);
 
-  --accent-hue: 280;
-  --accent-500: hsl(var(--accent-hue), 75%, 60%);
-  --accent-600: hsl(var(--accent-hue), 75%, 50%);
+  /* Accent colors - also monochrome */
+  --accent-500: hsl(0, 0%, 40%);
+  --accent-600: hsl(0, 0%, 30%);
 
-  --success: hsl(142, 71%, 45%);
-  --warning: hsl(38, 92%, 50%);
-  --error: hsl(0, 84%, 60%);
-  --info: hsl(199, 89%, 48%);
+  /* Status colors - monochrome versions */
+  --success: hsl(0, 0%, 50%);
+  --warning: hsl(0, 0%, 40%);
+  --error: hsl(0, 0%, 30%);
+  --info: hsl(0, 0%, 45%);
 
   /* Neutral Colors */
-  --gray-50: hsl(220, 20%, 97%);
-  --gray-100: hsl(220, 15%, 92%);
-  --gray-200: hsl(220, 13%, 85%);
-  --gray-300: hsl(220, 12%, 70%);
-  --gray-400: hsl(220, 10%, 55%);
-  --gray-500: hsl(220, 9%, 46%);
-  --gray-600: hsl(220, 10%, 35%);
-  --gray-700: hsl(220, 12%, 25%);
-  --gray-800: hsl(220, 15%, 15%);
-  --gray-900: hsl(220, 18%, 8%);
+  --gray-50: hsl(0, 0%, 98%);
+  --gray-100: hsl(0, 0%, 95%);
+  --gray-200: hsl(0, 0%, 90%);
+  --gray-300: hsl(0, 0%, 75%);
+  --gray-400: hsl(0, 0%, 60%);
+  --gray-500: hsl(0, 0%, 50%);
+  --gray-600: hsl(0, 0%, 40%);
+  --gray-700: hsl(0, 0%, 25%);
+  --gray-800: hsl(0, 0%, 15%);
+  --gray-900: hsl(0, 0%, 8%);
 
   /* Background & Surface */
-  --bg-primary: hsl(220, 25%, 6%);
-  --bg-secondary: hsl(220, 20%, 10%);
-  --bg-tertiary: hsl(220, 18%, 14%);
+  --bg-primary: hsl(0, 0%, 100%);
+  --bg-secondary: hsl(0, 0%, 98%);
+  --bg-tertiary: hsl(0, 0%, 95%);
 
-  --surface-glass: rgba(255, 255, 255, 0.05);
-  --surface-glass-hover: rgba(255, 255, 255, 0.08);
-  --surface-glass-border: rgba(255, 255, 255, 0.1);
+  --surface-glass: rgba(0, 0, 0, 0.03);
+  --surface-glass-hover: rgba(0, 0, 0, 0.06);
+  --surface-glass-border: rgba(0, 0, 0, 0.1);
 
   /* Text Colors */
-  --text-primary: hsl(0, 0%, 98%);
-  --text-secondary: hsl(220, 10%, 70%);
-  --text-tertiary: hsl(220, 10%, 50%);
+  --text-primary: hsl(0, 0%, 10%);
+  --text-secondary: hsl(0, 0%, 40%);
+  --text-tertiary: hsl(0, 0%, 60%);
 
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -111,39 +113,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Background Gradient Animation */
-body::before {
-  content: '';
-  position: fixed;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background:
-    radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 40% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 50%);
-  animation: gradientShift 20s ease infinite;
-  z-index: -1;
-  pointer-events: none;
-}
-
-@keyframes gradientShift {
-
-  0%,
-  100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-
-  33% {
-    transform: translate(5%, -5%) rotate(120deg);
-  }
-
-  66% {
-    transform: translate(-5%, 5%) rotate(240deg);
-  }
-}
-
 /* Typography */
 h1,
 h2,
@@ -154,10 +123,7 @@ h6 {
   font-weight: 700;
   line-height: 1.2;
   margin-bottom: var(--spacing-md);
-  background: linear-gradient(135deg, var(--text-primary), var(--primary-300));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
 }
 
 h1 {
@@ -267,21 +233,21 @@ a:hover {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary-500), var(--accent-500));
+  background: var(--primary-600);
   color: white;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+  background: var(--primary-700);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .btn-secondary {
   background: var(--surface-glass);
   border: 1px solid var(--surface-glass-border);
   color: var(--text-primary);
-  backdrop-filter: blur(10px);
 }
 
 .btn-secondary:hover {
@@ -291,12 +257,12 @@ a:hover {
 
 .btn-outline {
   background: transparent;
-  border: 2px solid var(--primary-500);
-  color: var(--primary-400);
+  border: 2px solid var(--primary-600);
+  color: var(--primary-600);
 }
 
 .btn-outline:hover {
-  background: var(--primary-500);
+  background: var(--primary-600);
   color: white;
 }
 
@@ -397,8 +363,8 @@ a:hover {
 }
 
 .checkbox:checked {
-  background: linear-gradient(135deg, var(--primary-500), var(--accent-500));
-  border-color: var(--primary-500);
+  background: var(--primary-600);
+  border-color: var(--primary-600);
 }
 
 .checkbox:checked::after {
@@ -424,7 +390,7 @@ a:hover {
 
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--primary-500), var(--accent-500));
+  background: var(--primary-600);
   border-radius: var(--radius-lg);
   transition: width var(--transition-slow);
   position: relative;
@@ -639,6 +605,38 @@ a:hover {
   }
 }
 
+@keyframes toast-enter {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-exit {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.toast.enter {
+  animation: toast-enter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.toast.exit {
+  animation: toast-exit 0.3s ease-in forwards;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from {
@@ -713,11 +711,11 @@ a:hover {
   justify-content: center;
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, var(--primary-500), var(--accent-500));
+  background: var(--primary-600);
   border-radius: var(--radius-xl);
   color: white;
   margin-bottom: var(--spacing-lg);
-  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   animation: float 3s ease-in-out infinite;
 }
 
@@ -736,10 +734,7 @@ a:hover {
 .auth-title {
   font-size: 2rem;
   margin-bottom: var(--spacing-sm);
-  background: linear-gradient(135deg, var(--text-primary), var(--primary-300));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
 }
 
 .auth-subtitle {
@@ -862,24 +857,19 @@ a:hover {
 
 /* Admin Login Specific Styles */
 .admin-login-bg {
-  background: linear-gradient(135deg,
-      rgba(99, 102, 241, 0.05) 0%,
-      rgba(168, 85, 247, 0.05) 100%);
+  background: var(--bg-secondary);
 }
 
 .admin-header .auth-title {
-  background: linear-gradient(135deg, var(--primary-400), var(--accent-500));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
 }
 
 .admin-icon {
-  background: linear-gradient(135deg, var(--accent-500), var(--primary-600));
+  background: var(--primary-600);
 }
 
 .admin-button {
-  background: linear-gradient(135deg, var(--accent-500), var(--primary-600));
+  background: var(--primary-600);
 }
 
 .admin-credentials-hint {
@@ -887,10 +877,10 @@ a:hover {
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-md);
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: var(--surface-glass);
+  border: 1px solid var(--surface-glass-border);
   border-radius: var(--radius-md);
-  color: var(--primary-300);
+  color: var(--text-secondary);
   font-size: 0.75rem;
   margin-bottom: var(--spacing-md);
 }

@@ -11,6 +11,7 @@ const UploadDocuments = () => {
     const { currentProfile, addDocument, saveProfile } = useProfile();
     const [uploadedDocs, setUploadedDocs] = useState([]);
     const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState('');
 
     if (!currentProfile) {
         navigate('/profile-type');
@@ -24,18 +25,28 @@ const UploadDocuments = () => {
     const alreadyUploaded = ['Marriage cert.', 'Birth cert.'];
 
     const handleFileUpload = async (docType, files) => {
-        if (!files || files.length === 0) return;
+        if (!files || files.length === 0) {
+            console.log('No files selected');
+            return;
+        }
 
         setUploading(true);
+        setUploadError('');
+
         try {
+            console.log(`Uploading ${files.length} file(s) for ${docType}`);
+
             // Upload each file to Supabase
             for (const file of files) {
+                console.log(`Uploading file: ${file.name}, size: ${file.size}, type: ${file.type}`);
                 await addDocument(file);
             }
+
             setUploadedDocs(prev => [...prev, docType]);
+            console.log(`Successfully uploaded files for ${docType}`);
         } catch (error) {
             console.error('Error uploading file:', error);
-            alert('Failed to upload file. Please try again.');
+            setUploadError(`Failed to upload ${docType}: ${error.message}`);
         } finally {
             setUploading(false);
         }
@@ -60,6 +71,19 @@ const UploadDocuments = () => {
         }}>
             <div className="fade-in">
                 <h1 className="text-center mb-xl">Upload Required Docs</h1>
+
+                {uploadError && (
+                    <div style={{
+                        padding: 'var(--spacing-md)',
+                        background: 'var(--surface-glass)',
+                        borderRadius: 'var(--radius-md)',
+                        border: '2px solid var(--error)',
+                        marginBottom: 'var(--spacing-lg)',
+                        color: 'var(--error)'
+                    }}>
+                        <strong>Error:</strong> {uploadError}
+                    </div>
+                )}
 
                 <Card className="mb-lg">
                     <h2 style={{ fontSize: '1.25rem', marginBottom: 'var(--spacing-lg)' }}>
@@ -163,9 +187,9 @@ const UploadDocuments = () => {
                         padding: 'var(--spacing-md)',
                         background: 'var(--surface-glass)',
                         borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--warning)'
+                        border: '1px solid var(--text-tertiary)'
                     }}>
-                        <p style={{ fontSize: '0.875rem', color: 'var(--warning)', marginBottom: '0' }}>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0' }}>
                             <strong>⚠️ Please upload all required documents before proceeding.</strong>
                         </p>
                     </div>
