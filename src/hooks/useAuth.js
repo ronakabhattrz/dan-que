@@ -9,60 +9,64 @@ export const useAuth = () => {
     useEffect(() => {
         let mounted = true;
 
-        const initializeAuth = async () => {
-            console.log('[DEBUG] initializeAuth: Starting quick fetch...');
+        const checkRole = async (userId) => {
             try {
-                // Initial session fetch - should be fast
+                // Return a promise that races the DB query against a 1.2s timeout
+                const { data } = await Promise.race([
+                    supabase.from('user_roles').select('role').eq('user_id', userId).maybeSingle(),
+                    new Promise(resolve => setTimeout(() => resolve({ data: null }), 1200))
+                ]);
+                return data?.role === 'admin';
+            } catch (e) {
+                console.error('[DEBUG] Role check failed:', e);
+                return false;
+            }
+        };
+
+        const initializeAuth = async () => {
+            console.log('[DEBUG] initializeAuth: Starting...');
+            try {
                 const { data: { session } } = await supabase.auth.getSession();
 
                 if (!mounted) return;
 
                 if (session) {
                     setUser(session.user);
-
-                    // Background role check - DON'T AWAIT it here to avoid hanging the UI
-                    supabase
-                        .from('user_roles')
-                        .select('role')
-                        .eq('user_id', session.user.id)
-                        .maybeSingle()
-                        .then(({ data }) => {
-                            if (mounted) {
-                                console.log('[DEBUG] Background role fetch result:', data?.role);
-                                setIsAdmin(data?.role === 'admin');
-                            }
-                        })
-                        .catch(err => console.error('[DEBUG] Background role error:', err));
+                    const isUserAdmin = await checkRole(session.user.id);
+                    if (mounted) setIsAdmin(isUserAdmin);
                 } else {
                     setUser(null);
                     setIsAdmin(false);
                 }
             } catch (error) {
-                console.error('[DEBUG] initializeAuth fail:', error);
+                console.error('[DEBUG] initializeAuth error:', error);
             } finally {
-                // ALWAYS finish loading quickly
                 if (mounted) setLoading(false);
             }
         };
 
         initializeAuth();
 
-        // Listen for all auth events
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('[DEBUG] onAuthStateChange:', event);
+            console.log('[DEBUG] onAuthStateChange event:', event);
             if (!mounted) return;
 
             if (session) {
                 setUser(session.user);
-                // Background role fetch for events
-                supabase
-                    .from('user_roles')
-                    .select('role')
-                    .eq('user_id', session.user.id)
-                    .maybeSingle()
-                    .then(({ data }) => {
-                        if (mounted) setIsAdmin(data?.role === 'admin');
+                // On sign in, we MUST confirm admin status before finishing loading
+                if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+                    setLoading(true);
+                    const isUserAdmin = await checkRole(session.user.id);
+                    if (mounted) {
+                        setIsAdmin(isUserAdmin);
+                        setLoading(false);
+                    }
+                } else {
+                    // Just update the role in background for other events
+                    checkRole(session.user.id).then(res => {
+                        if (mounted) setIsAdmin(res);
                     });
+                }
             } else {
                 setUser(null);
                 setIsAdmin(false);
@@ -70,10 +74,10 @@ export const useAuth = () => {
             }
         });
 
-        // Fail-safe to ensure loader always disappears within 2 seconds
+        // Global fail-safe
         const failSafe = setTimeout(() => {
             if (mounted && loading) setLoading(false);
-        }, 2000);
+        }, 3000);
 
         return () => {
             mounted = false;
@@ -98,6 +102,7 @@ export const useAuth = () => {
     }
 
     const signIn = async (email, password) => {
+        setLoading(true); // Start loading immediately on sign-in
         return await supabase.auth.signInWithPassword({
             email,
             password,
@@ -108,16 +113,11 @@ export const useAuth = () => {
         console.log('[DEBUG] Sign out initiated');
         try {
             await supabase.auth.signOut();
-            setUser(null);
-            setIsAdmin(false);
-            setLoading(false);
             // Force reload to clear all context states
             window.location.href = '/login';
         } catch (error) {
             console.error('[DEBUG] Sign out error:', error);
             // Fallback
-            setUser(null);
-            setIsAdmin(false);
             window.location.href = '/login';
         }
     }
