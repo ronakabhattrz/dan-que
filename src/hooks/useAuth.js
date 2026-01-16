@@ -4,22 +4,28 @@ import { supabase } from '../lib/supabase'
 export const useAuth = () => {
     const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(true)
-    const [isAdmin, setIsAdmin] = useState(false)
+    // Use localStorage to persist admin status across refreshes to prevent flickering/redirection
+    const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('danque_is_admin') === 'true')
 
     useEffect(() => {
         let mounted = true;
 
         const checkRole = async (userId) => {
             try {
-                // Return a promise that races the DB query against a 1.2s timeout
-                const { data } = await Promise.race([
+                console.log('[DEBUG] checkRole: Querying database...');
+                // Race the role check against a 2s timeout (increased for reliability on refresh)
+                const { data, error } = await Promise.race([
                     supabase.from('user_roles').select('role').eq('user_id', userId).maybeSingle(),
-                    new Promise(resolve => setTimeout(() => resolve({ data: null }), 1200))
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
                 ]);
-                return data?.role === 'admin';
+
+                if (error) throw error;
+                const adminStatus = data?.role === 'admin';
+                console.log('[DEBUG] checkRole: Result:', adminStatus);
+                return adminStatus;
             } catch (e) {
-                console.error('[DEBUG] Role check failed:', e);
-                return false;
+                console.warn('[DEBUG] checkRole: Failed or timed out. Falling back to current stated role.');
+                return localStorage.getItem('danque_is_admin') === 'true';
             }
         };
 
@@ -31,12 +37,18 @@ export const useAuth = () => {
                 if (!mounted) return;
 
                 if (session) {
+                    console.log('[DEBUG] initializeAuth: Session found, verifying role...');
                     setUser(session.user);
                     const isUserAdmin = await checkRole(session.user.id);
-                    if (mounted) setIsAdmin(isUserAdmin);
+                    if (mounted) {
+                        setIsAdmin(isUserAdmin);
+                        localStorage.setItem('danque_is_admin', isUserAdmin);
+                    }
                 } else {
+                    console.log('[DEBUG] initializeAuth: No session');
                     setUser(null);
                     setIsAdmin(false);
+                    localStorage.removeItem('danque_is_admin');
                 }
             } catch (error) {
                 console.error('[DEBUG] initializeAuth error:', error);
@@ -53,23 +65,20 @@ export const useAuth = () => {
 
             if (session) {
                 setUser(session.user);
-                // On sign in, we MUST confirm admin status before finishing loading
+                // On sign in, we MUST confirm admin status
                 if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
                     setLoading(true);
                     const isUserAdmin = await checkRole(session.user.id);
                     if (mounted) {
                         setIsAdmin(isUserAdmin);
+                        localStorage.setItem('danque_is_admin', isUserAdmin);
                         setLoading(false);
                     }
-                } else {
-                    // Just update the role in background for other events
-                    checkRole(session.user.id).then(res => {
-                        if (mounted) setIsAdmin(res);
-                    });
                 }
             } else {
                 setUser(null);
                 setIsAdmin(false);
+                localStorage.removeItem('danque_is_admin');
                 setLoading(false);
             }
         });
@@ -102,7 +111,7 @@ export const useAuth = () => {
     }
 
     const signIn = async (email, password) => {
-        setLoading(true); // Start loading immediately on sign-in
+        setLoading(true);
         return await supabase.auth.signInWithPassword({
             email,
             password,
@@ -112,6 +121,7 @@ export const useAuth = () => {
     const signOut = async () => {
         console.log('[DEBUG] Sign out initiated');
         try {
+            localStorage.removeItem('danque_is_admin');
             await supabase.auth.signOut();
             // Force reload to clear all context states
             window.location.href = '/login';
