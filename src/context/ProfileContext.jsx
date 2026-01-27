@@ -135,6 +135,55 @@ export const ProfileProvider = ({ children }) => {
       delete cleanInfo.hasDL;
       delete cleanInfo.hasEIN;
 
+      // Remove tax-related fields (these belong in tax_data table now)
+      delete cleanInfo.tax_responses;
+      delete cleanInfo.tax_financials;
+      delete cleanInfo.tax_outOfCountry;
+      delete cleanInfo.tax_monthsOut;
+      delete cleanInfo.tax_foreignAccount;
+      delete cleanInfo.tax_digitalAssets;
+      delete cleanInfo.tax_w2Count;
+      delete cleanInfo.tax_1099Count;
+      delete cleanInfo.tax_spouseW2Count;
+      delete cleanInfo.tax_spouse1099Count;
+      delete cleanInfo.dependent_student;
+      delete cleanInfo.dependent_months_us;
+      delete cleanInfo.dependent_lived_with;
+      delete cleanInfo.dependent_worked;
+      delete cleanInfo.dependent_income_docs;
+      delete cleanInfo.dependent_residency_proof;
+
+      // Remove business tax fields (these belong in tax_data table now)
+      delete cleanInfo.biz_revenue;
+      delete cleanInfo.ez_phone;
+      delete cleanInfo.ez_internet;
+      delete cleanInfo.taxi_car_rent;
+      delete cleanInfo.taxi_fuel;
+      delete cleanInfo.taxi_uber_fees;
+      delete cleanInfo.truck_pmt;
+      delete cleanInfo.truck_trailer;
+      delete cleanInfo.truck_dispatch;
+      delete cleanInfo.other_expenses;
+
+      // Remove any remaining camelCase fields that might slip through
+      delete cleanInfo.businessName;  // Already converted above, but double-check
+      delete cleanInfo.firstName;
+      delete cleanInfo.lastName;
+      delete cleanInfo.preferredName;
+      delete cleanInfo.mailingAddress;
+      delete cleanInfo.residencyState;
+      delete cleanInfo.maritalStatus;
+      delete cleanInfo.spouseInfo;
+      delete cleanInfo.carriesBusiness;
+
+      // Convert empty date strings to null (PostgreSQL doesn't accept empty strings for dates)
+      const dateFields = ['dob', 'date_inc', 'spouse_dob'];
+      dateFields.forEach(field => {
+        if (cleanInfo[field] === '') {
+          cleanInfo[field] = null;
+        }
+      });
+
       // Wrap DL details
       if (cleanInfo.dl_serial || cleanInfo.dl_issue_date || cleanInfo.dl_expiry_date || cleanInfo.dl_backside_code) {
         cleanInfo.dl_details = {
@@ -144,11 +193,13 @@ export const ProfileProvider = ({ children }) => {
           expiry_date: cleanInfo.dl_expiry_date || currentProfile.dl_details?.expiry_date,
           backside_code: cleanInfo.dl_backside_code || currentProfile.dl_details?.backside_code
         };
-        delete cleanInfo.dl_serial;
-        delete cleanInfo.dl_issue_date;
-        delete cleanInfo.dl_expiry_date;
-        delete cleanInfo.dl_backside_code;
       }
+
+      // Remove DL individual fields after wrapping
+      delete cleanInfo.dl_serial;
+      delete cleanInfo.dl_issue_date;
+      delete cleanInfo.dl_expiry_date;
+      delete cleanInfo.dl_backside_code;
 
       const updated = await profileService.updateProfile(currentProfile.id, cleanInfo);
 

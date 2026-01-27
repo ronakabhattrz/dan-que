@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabase'
 
 export const documentService = {
     // Upload document
-    async uploadDocument(profileId, file) {
+    async uploadDocument(profileId, file, taxYear = null) {
         // Get current user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError || !user) throw new Error('User not authenticated');
@@ -33,7 +33,8 @@ export const documentService = {
                 name: file.name,
                 type: file.type,
                 file_url: publicUrl,
-                file_size: file.size
+                file_size: file.size,
+                tax_year: taxYear
             })
             .select()
             .single()
@@ -84,5 +85,18 @@ export const documentService = {
 
         if (error) throw error
         return data
+    },
+
+    // Get documents for specific tax year
+    async getDocumentsByTaxYear(profileId, taxYear) {
+        const { data, error } = await supabase
+            .from('documents')
+            .select('*')
+            .eq('profile_id', profileId)
+            .eq('tax_year', taxYear)
+            .order('uploaded_at', { ascending: false })
+
+        if (error) throw error
+        return data || []
     }
 }

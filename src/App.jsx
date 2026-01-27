@@ -13,67 +13,58 @@ import UploadDocuments from './pages/UploadDocuments';
 import ProfileDetails from './pages/ProfileDetails';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProfileDetails from './pages/admin/AdminProfileDetails';
+import AdminMessages from './pages/admin/AdminMessages';
+import TaxDataManagement from './pages/TaxDataManagement';
+import TaxHistory from './pages/TaxHistory';
 import './index.css';
 
 import { NotificationProvider } from './context/NotificationContext';
+import { MessagingProvider } from './context/MessagingContext';
+import Header from './components/Header';
+import { Outlet } from 'react-router-dom';
+
+const ProtectedLayout = () => (
+  <>
+    <Header />
+    <div style={{ paddingTop: '70px' }}>
+      <Outlet />
+    </div>
+  </>
+);
 
 function App() {
+
   return (
     <AuthProvider>
       <NotificationProvider>
-        <ProfileProvider>
-          <Router>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
+        <MessagingProvider>
+          <ProfileProvider>
+            <Router>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
 
-              {/* Protected User Routes */}
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <HomePage />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile-type" element={
-                <ProtectedRoute>
-                  <ProfileTypeSelection />
-                </ProtectedRoute>
-              } />
-              <Route path="/general-info" element={
-                <ProtectedRoute>
-                  <GeneralInfoCollection />
-                </ProtectedRoute>
-              } />
-              <Route path="/verify-profile" element={
-                <ProtectedRoute>
-                  <VerifyProfile />
-                </ProtectedRoute>
-              } />
-              <Route path="/upload-documents" element={
-                <ProtectedRoute>
-                  <UploadDocuments />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile/:profileId" element={
-                <ProtectedRoute>
-                  <ProfileDetails />
-                </ProtectedRoute>
-              } />
+                {/* Protected Routes */}
+                <Route element={<ProtectedLayout />}>
+                  <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+                  <Route path="/profile-type" element={<ProtectedRoute><ProfileTypeSelection /></ProtectedRoute>} />
+                  <Route path="/general-info" element={<ProtectedRoute><GeneralInfoCollection /></ProtectedRoute>} />
+                  <Route path="/verify-profile" element={<ProtectedRoute><VerifyProfile /></ProtectedRoute>} />
+                  <Route path="/upload-documents" element={<ProtectedRoute><UploadDocuments /></ProtectedRoute>} />
+                  <Route path="/tax-data" element={<ProtectedRoute><TaxDataManagement /></ProtectedRoute>} />
+                  <Route path="/tax-history" element={<ProtectedRoute><TaxHistory /></ProtectedRoute>} />
+                  <Route path="/profile/:profileId" element={<ProtectedRoute><ProfileDetails /></ProtectedRoute>} />
 
-              {/* Protected Admin Routes */}
-              <Route path="/admin" element={
-                <ProtectedRoute adminOnly={true}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/profile/:profileId" element={
-                <ProtectedRoute adminOnly={true}>
-                  <AdminProfileDetails />
-                </ProtectedRoute>
-              } />
-            </Routes>
-          </Router>
-        </ProfileProvider>
+                  {/* Protected Admin Routes */}
+                  <Route path="/admin" element={<ProtectedRoute adminOnly={true}><AdminDashboard /></ProtectedRoute>} />
+                  <Route path="/admin/messages" element={<ProtectedRoute adminOnly={true}><AdminMessages /></ProtectedRoute>} />
+                  <Route path="/admin/profile/:profileId" element={<ProtectedRoute adminOnly={true}><AdminProfileDetails /></ProtectedRoute>} />
+                </Route>
+              </Routes>
+            </Router>
+          </ProfileProvider>
+        </MessagingProvider>
       </NotificationProvider>
     </AuthProvider>
   );

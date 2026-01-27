@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProfile } from '../../context/ProfileContext';
 import { profileService } from '../../services/profileService';
+import { taxDataService } from '../../services/taxDataService';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import '../../index.css';
@@ -12,17 +13,22 @@ const AdminProfileDetails = () => {
     const { updateProfileStatus } = useProfile();
 
     const [profile, setProfile] = useState(null);
+    const [taxRecords, setTaxRecords] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        const fetchProfile = async () => {
+        const fetchData = async () => {
             try {
                 setLoading(true);
-                const data = await profileService.getProfileById(profileId);
-                setProfile(data);
+                const [profileData, taxData] = await Promise.all([
+                    profileService.getProfileById(profileId),
+                    taxDataService.getAllTaxData(profileId)
+                ]);
+                setProfile(profileData);
+                setTaxRecords(taxData);
             } catch (error) {
-                console.error('Error fetching profile:', error);
+                console.error('Error fetching data:', error);
                 alert('Failed to load profile details.');
                 navigate('/admin');
             } finally {
@@ -31,7 +37,7 @@ const AdminProfileDetails = () => {
         };
 
         if (profileId) {
-            fetchProfile();
+            fetchData();
         }
     }, [profileId, navigate]);
 
@@ -131,7 +137,9 @@ const AdminProfileDetails = () => {
             <div className="fade-in">
                 <div className="flex justify-between items-center mb-xl">
                     <div>
-                        <h1 style={{ marginBottom: 'var(--spacing-xs)' }}>Review Profile</h1>
+                        <h1 style={{ marginBottom: 'var(--spacing-xs)' }}>
+                            {profile.type === 'personal' ? `${profile.first_name || ''} ${profile.last_name || ''}` : profile.business_name}
+                        </h1>
                         <p style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem' }}>
                             {profile.type === 'personal' ? '👤 Personal Profile' : '🏢 Business Profile'} • {profile.id}
                         </p>
@@ -204,13 +212,80 @@ const AdminProfileDetails = () => {
 
                 {renderDataSection('Identification Details', profile.dl_details)}
 
-                {renderDataSection('Household & Tax', {
+                {renderDataSection('Household Information', {
                     marital_status: profile.marital_status,
                     spouse_info: profile.spouse_info,
-                    dependents: profile.dependents,
-                    tax_responses: profile.tax_responses,
-                    tax_financials: profile.tax_financials
+                    dependents: profile.dependents
                 })}
+
+                {/* Tax Records Section */}
+                <Card className="mb-lg">
+                    <h3 style={{
+                        fontSize: '0.75rem',
+                        fontWeight: '700',
+                        color: 'var(--text-tertiary)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px',
+                        marginBottom: 'var(--spacing-lg)',
+                        paddingLeft: 'var(--spacing-xs)',
+                        borderLeft: '3px solid var(--success)'
+                    }}>
+                        Year-wise Tax Records
+                    </h3>
+
+                    {taxRecords.length > 0 ? (
+                        <div style={{ display: 'grid', gap: 'var(--spacing-md)' }}>
+                            {taxRecords.map((record) => (
+                                <div key={record.id} style={{
+                                    padding: 'var(--spacing-md)',
+                                    background: 'var(--bg-primary)',
+                                    borderRadius: 'var(--radius-md)',
+                                    border: '1px solid var(--surface-glass-border)'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-md)', borderBottom: '1px solid var(--surface-glass-border)', paddingBottom: 'var(--spacing-sm)' }}>
+                                        <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--success)' }}>
+                                            Tax Year {record.tax_year}
+                                        </span>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                                            Last Updated: {new Date(record.updated_at).toLocaleString()}
+                                        </span>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--spacing-md)' }}>
+                                        <div>
+                                            <h4 style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '8px' }}>Personal Status</h4>
+                                            <div style={{ fontSize: '0.875rem' }}>
+                                                <div>Out of Country: {record.out_of_country ? `Yes (${record.months_out_of_country} mo)` : 'No'}</div>
+                                                <div>Foreign Bank: {record.foreign_account ? 'Yes' : 'No'}</div>
+                                                <div>Digital Assets: {record.digital_assets ? 'Yes' : 'No'}</div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h4 style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '8px' }}>Filing Volume</h4>
+                                            <div style={{ fontSize: '0.875rem' }}>
+                                                <div>Personal: {record.w2_count} W-2, {record.form_1099_count} 1099</div>
+                                                <div>Spouse: {record.spouse_w2_count} W-2, {record.spouse_1099_count} 1099</div>
+                                            </div>
+                                        </div>
+                                        {record.has_business_income && (
+                                            <div>
+                                                <h4 style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', textTransform: 'uppercase', marginBottom: '8px' }}>Business Data</h4>
+                                                <div style={{ fontSize: '0.875rem' }}>
+                                                    <div>Revenue: ${record.total_revenue?.toLocaleString()}</div>
+                                                    <div>Industry Exp: ${Object.values(record.industry_expenses || {}).reduce((a, b) => (a || 0) + (b || 0), 0)?.toLocaleString()}</div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div style={{ textAlign: 'center', padding: 'var(--spacing-xl)', color: 'var(--text-tertiary)', background: 'var(--surface-glass)', borderRadius: 'var(--radius-md)' }}>
+                            No specific tax records found for this profile yet.
+                        </div>
+                    )}
+                </Card>
 
                 {/* Documents */}
                 <Card className="mb-lg">

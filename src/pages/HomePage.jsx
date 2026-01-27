@@ -34,21 +34,11 @@ const HomePage = () => {
     return (
         <div className="container" style={{ paddingTop: 'var(--spacing-3xl)', paddingBottom: 'var(--spacing-3xl)' }}>
             <div className="fade-in">
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 'var(--spacing-xl)'
-                }}>
-                    <div>
-                        <h1 className="text-center mb-sm">Profile Management</h1>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
-                            Welcome back, {user?.email}!
-                        </p>
-                    </div>
-                    <Button variant="outline" onClick={handleLogout}>
-                        Logout
-                    </Button>
+                <div style={{ marginBottom: 'var(--spacing-xl)' }}>
+                    <h1 className="text-center mb-sm">Profile Management</h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', textAlign: 'center' }}>
+                        Welcome back, {user?.email}!
+                    </p>
                 </div>
 
                 <Card className="mb-xl">
@@ -150,11 +140,15 @@ const HomePage = () => {
                         </p>
                     </Card>
 
-                    <Card hover={false} style={{ textAlign: 'center', padding: 'var(--spacing-lg)' }}>
-                        <div style={{ fontSize: '2rem', marginBottom: 'var(--spacing-sm)' }}>💰</div>
+                    <Card
+                        hover={true}
+                        onClick={() => navigate('/tax-data')}
+                        style={{ textAlign: 'center', padding: 'var(--spacing-lg)', cursor: 'pointer' }}
+                    >
+                        <div style={{ fontSize: '2rem', marginBottom: 'var(--spacing-sm)' }}>📊</div>
                         <h3 style={{ fontSize: '1rem', marginBottom: '0' }}>Taxes</h3>
                         <p style={{ fontSize: '0.875rem', color: 'var(--text-tertiary)', marginBottom: '0' }}>
-                            Coming Soon
+                            Manage tax data by year
                         </p>
                     </Card>
 

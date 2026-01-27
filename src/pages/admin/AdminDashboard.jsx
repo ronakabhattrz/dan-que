@@ -73,18 +73,11 @@ const AdminDashboard = () => {
             paddingBottom: 'var(--spacing-3xl)'
         }}>
             <div className="fade-in">
-                <div className="flex justify-between items-center mb-xl">
-                    <div>
-                        <h1>Admin Dashboard</h1>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginTop: 'var(--spacing-sm)' }}>
-                            Welcome, {user?.email}
-                        </p>
-                    </div>
-                    <div className="flex gap-md">
-                        <Button variant="outline" onClick={handleLogout}>
-                            Logout
-                        </Button>
-                    </div>
+                <div className="mb-xl text-center">
+                    <h1>Admin Dashboard</h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginTop: 'var(--spacing-sm)' }}>
+                        Welcome, {user?.email}
+                    </p>
                 </div>
 
                 {/* Stats Cards */}
@@ -229,10 +222,23 @@ const AdminDashboard = () => {
                                                 {profile.type === 'personal' ? '👤 Personal' : '🏢 Business'}
                                             </td>
                                             <td style={{ padding: 'var(--spacing-md)' }}>
-                                                <span className={`badge badge-${profile.status === 'verified' ? 'success' :
-                                                    profile.status === 'pending' ? 'warning' :
-                                                        profile.status === 'rejected' ? 'error' : 'secondary'
-                                                    }`} style={{ fontSize: '0.75rem', padding: '2px 8px' }}>
+                                                <span style={{
+                                                    fontSize: '0.7rem',
+                                                    padding: '4px 10px',
+                                                    borderRadius: '20px',
+                                                    fontWeight: '700',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.5px',
+                                                    background: profile.status === 'verified' ? 'rgba(16, 185, 129, 0.1)' :
+                                                        profile.status === 'pending' ? 'rgba(245, 158, 11, 0.1)' :
+                                                            profile.status === 'rejected' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(107, 114, 128, 0.1)',
+                                                    color: profile.status === 'verified' ? '#10b981' :
+                                                        profile.status === 'pending' ? '#f59e0b' :
+                                                            profile.status === 'rejected' ? '#ef4444' : '#6b7280',
+                                                    border: `1px solid ${profile.status === 'verified' ? 'rgba(16, 185, 129, 0.2)' :
+                                                        profile.status === 'pending' ? 'rgba(245, 158, 11, 0.2)' :
+                                                            profile.status === 'rejected' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(107, 114, 128, 0.2)'}`
+                                                }}>
                                                     {profile.status}
                                                 </span>
                                             </td>

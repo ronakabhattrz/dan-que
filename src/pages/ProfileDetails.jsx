@@ -438,15 +438,6 @@ const ProfileDetails = () => {
                                 {renderField('Mailing Address', 'mailingAddress', profile.mailingAddress || profile.mailing_address)}
                                 {renderField('Residency State', 'residencyState', profile.residency_state)}
 
-                                {profile.dl_details && (
-                                    <>
-                                        <h3 style={{ fontSize: '1.125rem', marginTop: 'var(--spacing-lg)', marginBottom: 'var(--spacing-md)', color: 'var(--text-primary)' }}>Driver's License / ID</h3>
-                                        {renderField('Serial Number', 'dl_serial', profile.dl_details.serial_number)}
-                                        {renderField('Issue Date', 'dl_issue_date', profile.dl_details.issue_date, 'date')}
-                                        {renderField('Expiry Date', 'dl_expiry_date', profile.dl_details.expiry_date, 'date')}
-                                        {renderField('Backside Code', 'dl_backside_code', profile.dl_details.backside_code)}
-                                    </>
-                                )}
 
                                 {profile.marital_status && (
                                     <>
@@ -473,19 +464,6 @@ const ProfileDetails = () => {
                                         {renderField('Number of Dependents', 'numDependents', profile.dependents.length)}
                                     </>
                                 )}
-
-                                {profile.tax_responses && Object.keys(profile.tax_responses).length > 0 && (
-                                    <>
-                                        <h3 style={{ fontSize: '1.125rem', marginTop: 'var(--spacing-lg)', marginBottom: 'var(--spacing-md)', color: 'var(--text-primary)' }}>Tax Information</h3>
-                                        {renderField('Carries Business', 'carriesBusiness', profile.has_business ? 'Yes' : 'No')}
-                                        {renderField('Has EIN', 'hasEIN', profile.ein ? 'Yes' : 'No')}
-                                        {renderField('Out of Country (6+ months)', 'tax_outOfCountry', profile.tax_responses.outOfCountry)}
-                                        {renderField('Foreign Bank Account', 'tax_foreignAccount', profile.tax_responses.foreignAccount)}
-                                        {renderField('Digital Assets/Investment Income', 'tax_digitalAssets', profile.tax_responses.digitalAssets)}
-                                        {renderField('Number of W-2s', 'tax_w2Count', profile.tax_responses.w2Count)}
-                                        {renderField('Number of 1099s', 'tax_1099Count', profile.tax_responses['1099Count'])}
-                                    </>
-                                )}
                             </>
                         ) : (
                             <>
@@ -505,166 +483,9 @@ const ProfileDetails = () => {
                                         {renderField('Industry Description', 'industry_description', profile.industry_description)}
                                     </>
                                 )}
-
-                                {profile.tax_financials && Object.keys(profile.tax_financials).length > 0 && (
-                                    <>
-                                        <h3 style={{ fontSize: '1.125rem', marginTop: 'var(--spacing-lg)', marginBottom: 'var(--spacing-md)', color: 'var(--text-primary)' }}>Financial Information</h3>
-                                        {renderField('Total Revenue', 'biz_revenue', profile.tax_financials.revenue ? `$${profile.tax_financials.revenue}` : '')}
-                                        {renderField('Phone Expenses', 'ez_phone', profile.tax_financials.phone ? `$${profile.tax_financials.phone}` : '')}
-                                        {renderField('Internet Expenses', 'ez_internet', profile.tax_financials.internet ? `$${profile.tax_financials.internet}` : '')}
-                                    </>
-                                )}
                             </>
                         )}
                     </div>
-                </Card>
-
-                <Card>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-lg)' }}>
-                        <h2 style={{ fontSize: '1.25rem', marginBottom: '0' }}>Documents</h2>
-                        <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            + Upload Document
-                        </Button>
-                    </div>
-
-                    {tempDocs && tempDocs.length > 0 ? (
-                        <div style={{ display: 'grid', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-lg)' }}>
-                            {tempDocs.map((doc) => (
-                                <div key={doc.id} style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    padding: 'var(--spacing-md)',
-                                    background: 'var(--surface-glass)',
-                                    borderRadius: 'var(--radius-md)',
-                                    border: '1px solid var(--surface-glass-border)'
-                                }}>
-                                    <div className="flex items-center gap-md">
-                                        <div style={{
-                                            width: '48px',
-                                            height: '48px',
-                                            background: 'var(--gray-100)',
-                                            borderRadius: 'var(--radius-sm)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            overflow: 'hidden',
-                                            border: '1px solid var(--surface-glass-border)'
-                                        }}>
-                                            {(() => {
-                                                const isImage = doc.type?.startsWith('image/') ||
-                                                    doc.name?.toLowerCase().endsWith('.jpg') ||
-                                                    doc.name?.toLowerCase().endsWith('.jpeg') ||
-                                                    doc.name?.toLowerCase().endsWith('.png') ||
-                                                    doc.name?.toLowerCase().endsWith('.gif') ||
-                                                    doc.name?.toLowerCase().endsWith('.webp');
-
-                                                if (isImage) {
-                                                    const src = doc.isNew ? URL.createObjectURL(doc.file) : (doc.url || doc.file_url);
-                                                    return <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />;
-                                                }
-                                                return <span style={{ fontSize: '1.5rem' }}>📄</span>;
-                                            })()}
-                                        </div>
-                                        <div>
-                                            <div style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
-                                                {doc.name} {doc.isNew && <span style={{ fontSize: '0.75rem', color: 'var(--primary-400)' }}>(Pending)</span>}
-                                            </div>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                                                {new Date(doc.created_at).toLocaleDateString()}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-md items-center">
-                                        {!doc.isNew && (
-                                            <a
-                                                href={doc.url || doc.file_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                style={{
-                                                    color: 'var(--primary-400)',
-                                                    textDecoration: 'none',
-                                                    fontSize: '0.875rem',
-                                                    fontWeight: '500'
-                                                }}
-                                            >
-                                                View File
-                                            </a>
-                                        )}
-                                        <button
-                                            onClick={() => handleRemoveDocument(doc.id)}
-                                            style={{
-                                                background: 'none',
-                                                border: 'none',
-                                                color: 'var(--error)',
-                                                cursor: 'pointer',
-                                                fontSize: '1.25rem',
-                                                padding: '4px'
-                                            }}
-                                            title="Remove Document"
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div style={{
-                            textAlign: 'center',
-                            padding: 'var(--spacing-xl)',
-                            color: 'var(--text-tertiary)',
-                            background: 'var(--surface-glass)',
-                            borderRadius: 'var(--radius-md)',
-                            border: '1px dashed var(--surface-glass-border)',
-                            marginBottom: 'var(--spacing-lg)'
-                        }}>
-                            No documents uploaded yet.
-                        </div>
-                    )}
-
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept="image/*,.pdf"
-                        onChange={(e) => {
-                            const files = Array.from(e.target.files || []);
-                            if (files.length > 0) {
-                                handleFileUpload(files);
-                            }
-                            // Reset input so same file can be selected again
-                            e.target.value = '';
-                        }}
-                        style={{ display: 'none' }}
-                    />
-
-                    {(pendingUploads.length > 0 || docsToRemove.length > 0) && (
-                        <div style={{
-                            padding: 'var(--spacing-md)',
-                            background: 'var(--surface-glass)',
-                            borderRadius: 'var(--radius-md)',
-                            border: '1px solid var(--primary-600)',
-                            marginTop: 'var(--spacing-md)'
-                        }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                                    You have unsaved document changes
-                                </span>
-                                <Button
-                                    variant="primary"
-                                    onClick={handleSave}
-                                    disabled={saving}
-                                >
-                                    {saving ? 'Saving...' : 'Save All Changes'}
-                                </Button>
-                            </div>
-                        </div>
-                    )}
                 </Card>
             </div>
         </div>
