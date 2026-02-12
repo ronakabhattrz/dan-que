@@ -7,6 +7,7 @@ import { documentService } from '../services/documentService';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import FormCard from '../components/FormCard';
 
 const TaxDataManagement = () => {
     const navigate = useNavigate();
@@ -32,6 +33,7 @@ const TaxDataManagement = () => {
     const [saving, setSaving] = useState(false);
     const [documents, setDocuments] = useState([]);
     const [uploading, setUploading] = useState(false);
+    const [dismissedCards, setDismissedCards] = useState({});
 
     const [taxData, setTaxData] = useState({
         // Personal Tax Questions
@@ -173,7 +175,23 @@ const TaxDataManagement = () => {
     };
 
     const handleInputChange = (field, value) => {
-        setTaxData(prev => ({ ...prev, [field]: value }));
+        // Handle industry expenses separately
+        if (['car_rent', 'fuel', 'fees', 'other'].includes(field)) {
+            setTaxData(prev => ({
+                ...prev,
+                industry_expenses: {
+                    ...prev.industry_expenses,
+                    [field]: value === '' || value === null ? null : parseFloat(value)
+                }
+            }));
+        } else {
+            // Convert Yes/No to boolean for select fields
+            let processedValue = value;
+            if (value === 'Yes') processedValue = true;
+            if (value === 'No') processedValue = false;
+
+            setTaxData(prev => ({ ...prev, [field]: processedValue }));
+        }
     };
 
     const handleFileUpload = async (event) => {
@@ -296,6 +314,83 @@ const TaxDataManagement = () => {
     const currentYear = new Date().getFullYear();
     const yearOptions = Array.from({ length: 7 }, (_, i) => currentYear - 5 + i);
 
+    // Generate tax questions based on profile type
+    const getTaxQuestions = () => {
+        const questions = [];
+
+        // Personal Tax Questions
+        if (isPersonal) {
+            questions.push(
+                { id: 'out_of_country', label: 'Were you out of the country over 6 months?', type: 'select', options: ['No', 'Yes'] },
+            );
+
+            if (taxData.out_of_country) {
+                questions.push(
+                    { id: 'months_out_of_country', label: 'How many months? (1-12)', type: 'number', min: 1, max: 12 }
+                );
+            }
+
+            questions.push(
+                { id: 'foreign_account', label: 'Foreign bank account?', type: 'select', options: ['No', 'Yes'] },
+                { id: 'digital_assets', label: 'Did you sell any digital asset or investment income?', type: 'select', options: ['No', 'Yes'] },
+                { id: 'w2_count', label: 'How many W-2s did YOU have?', type: 'number', min: 0 },
+                { id: 'form_1099_count', label: 'How many 1099s did YOU have?', type: 'number', min: 0 }
+            );
+
+            if (isMarried) {
+                questions.push(
+                    { id: 'spouse_w2_count', label: 'How many W-2s did your SPOUSE have?', type: 'number', min: 0 },
+                    { id: 'spouse_1099_count', label: 'How many 1099s did your SPOUSE have?', type: 'number', min: 0 }
+                );
+            }
+
+            questions.push(
+                { id: 'has_business_income', label: 'Did you have any Business/Self-Employment income for this year?', type: 'select', options: ['No', 'Yes'], helper: '(e.g. 1099-NEC, 1099-K, Cash, Uber, DoorDash, Freelancing)' }
+            );
+        }
+
+        // Dependent Questions
+        if (isPersonal && hasDependents) {
+            questions.push(
+                { id: 'dependent_student', label: 'Was any dependent (19-24) a student last year?', type: 'select', options: ['No', 'Yes'] },
+                { id: 'dependent_months_us', label: 'How many months was the dependent located in the US?', type: 'number', min: 0, max: 12 },
+                { id: 'dependent_lived_with', label: 'Did the dependent live with you last tax year?', type: 'select', options: ['No', 'Yes'] },
+                { id: 'dependent_worked', label: 'Did any dependent over age 16 work?', type: 'select', options: ['No', 'Yes'] }
+            );
+        }
+
+        // Business Tax Questions
+        if (isBusiness || (isPersonal && taxData.has_business_income === 'Yes')) {
+            questions.push(
+                { id: 'total_revenue', label: 'Total Revenue (all forms of 1099, cash, deposits)', type: 'number', step: '0.01', min: 0, placeholder: '0.00' },
+                { id: 'phone_expense', label: 'Phone Expense', type: 'number', step: '0.01', min: 0, placeholder: '0.00' },
+                { id: 'internet_expense', label: 'Internet Expense', type: 'number', step: '0.01', min: 0, placeholder: '0.00' },
+                { id: 'car_rent', label: 'Car/Truck Payment or Rent', type: 'number', step: '0.01', placeholder: '0.00' },
+                { id: 'fuel', label: 'Fuel', type: 'number', step: '0.01', placeholder: '0.00' },
+                { id: 'fees', label: 'Dispatch/Platform Fees (Uber, etc.)', type: 'number', step: '0.01', placeholder: '0.00' },
+                { id: 'other', label: 'Other Professional Expenses', type: 'number', step: '0.01', placeholder: '0.00' }
+            );
+        }
+
+        return questions;
+    };
+
+    const taxQuestions = getTaxQuestions();
+
+    // Helper to get value for a field (handles both regular fields and industry_expenses)
+    const getValue = (fieldId) => {
+        if (['car_rent', 'fuel', 'fees', 'other'].includes(fieldId)) {
+            return taxData.industry_expenses?.[fieldId] ?? '';
+        }
+
+        const value = taxData[fieldId];
+        // Convert boolean to Yes/No for select fields
+        if (typeof value === 'boolean') {
+            return value ? 'Yes' : 'No';
+        }
+        return value ?? '';
+    };
+
     return (
         <div className="container" style={{ paddingTop: 'var(--spacing-3xl)', paddingBottom: 'var(--spacing-3xl)' }}>
             <div className="fade-in">
@@ -365,261 +460,100 @@ const TaxDataManagement = () => {
                     </Card>
                 ) : (
                     <>
-                        {/* Personal Tax Questions */}
-                        {isPersonal && (
-                            <Card style={{ marginBottom: 'var(--spacing-lg)', borderLeft: '4px solid var(--primary-500)' }}>
-                                <h3 style={{ marginBottom: 'var(--spacing-lg)' }}>Personal Tax Information</h3>
-
-                                <div className="form-group">
-                                    <label className="form-label">Were you out of the country over 6 months?</label>
-                                    <select
-                                        className="form-input"
-                                        value={taxData.out_of_country ? 'Yes' : 'No'}
-                                        onChange={(e) => handleInputChange('out_of_country', e.target.value === 'Yes')}
-                                    >
-                                        <option value="No">No</option>
-                                        <option value="Yes">Yes</option>
-                                    </select>
-                                </div>
-
-                                {taxData.out_of_country && (
-                                    <div className="form-group">
-                                        <label className="form-label">How many months? (1-12)</label>
-                                        <Input
-                                            type="number"
-                                            min="1"
-                                            max="12"
-                                            value={taxData.months_out_of_country ?? ''}
-                                            onChange={(e) => handleInputChange('months_out_of_country', e.target.value === '' ? null : parseInt(e.target.value))}
-                                        />
-                                    </div>
-                                )}
-
-                                <div className="form-group">
-                                    <label className="form-label">Foreign bank account?</label>
-                                    <select
-                                        className="form-input"
-                                        value={taxData.foreign_account ? 'Yes' : 'No'}
-                                        onChange={(e) => handleInputChange('foreign_account', e.target.value === 'Yes')}
-                                    >
-                                        <option value="No">No</option>
-                                        <option value="Yes">Yes</option>
-                                    </select>
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Did you sell any digital asset or investment income?</label>
-                                    <select
-                                        className="form-input"
-                                        value={taxData.digital_assets ? 'Yes' : 'No'}
-                                        onChange={(e) => handleInputChange('digital_assets', e.target.value === 'Yes')}
-                                    >
-                                        <option value="No">No</option>
-                                        <option value="Yes">Yes</option>
-                                    </select>
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">How many W-2s did YOU have?</label>
-                                    <Input
-                                        type="number"
-                                        min="0"
-                                        value={taxData.w2_count ?? 0}
-                                        onChange={(e) => handleInputChange('w2_count', e.target.value === '' ? 0 : parseInt(e.target.value))}
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">How many 1099s did YOU have?</label>
-                                    <Input
-                                        type="number"
-                                        min="0"
-                                        value={taxData.form_1099_count ?? 0}
-                                        onChange={(e) => handleInputChange('form_1099_count', e.target.value === '' ? 0 : parseInt(e.target.value))}
-                                    />
-                                </div>
-
-                                {isMarried && (
-                                    <>
-                                        <div className="form-group">
-                                            <label className="form-label">How many W-2s did your SPOUSE have?</label>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                value={taxData.spouse_w2_count ?? 0}
-                                                onChange={(e) => handleInputChange('spouse_w2_count', e.target.value === '' ? 0 : parseInt(e.target.value))}
-                                            />
-                                        </div>
-
-                                        <div className="form-group">
-                                            <label className="form-label">How many 1099s did your SPOUSE have?</label>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                value={taxData.spouse_1099_count ?? 0}
-                                                onChange={(e) => handleInputChange('spouse_1099_count', e.target.value === '' ? 0 : parseInt(e.target.value))}
-                                            />
-                                        </div>
-                                    </>
-                                )}
-
-                                <div className="form-group border-top" style={{ marginTop: 'var(--spacing-md)', paddingTop: 'var(--spacing-md)' }}>
-                                    <label className="form-label" style={{ fontWeight: '600' }}>Did you have any Business/Self-Employment income for this year?</label>
-                                    <select
-                                        className="form-input"
-                                        value={taxData.has_business_income ? 'Yes' : 'No'}
-                                        onChange={(e) => handleInputChange('has_business_income', e.target.value === 'Yes')}
-                                        style={{ border: '2px solid var(--primary-400)' }}
-                                    >
-                                        <option value="No">No</option>
-                                        <option value="Yes">Yes</option>
-                                    </select>
-                                    <p style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)', marginTop: '4px' }}>
-                                        (e.g. 1099-NEC, 1099-K, Cash, Uber, DoorDash, Freelancing)
+                        {/* Tax Data Cards Section */}
+                        {taxQuestions.length > 0 ? (
+                            <>
+                                <div style={{
+                                    textAlign: 'center',
+                                    marginBottom: 'var(--spacing-xl)'
+                                }}>
+                                    <h2 style={{
+                                        fontSize: '1.5rem',
+                                        fontWeight: '700',
+                                        color: 'var(--text-primary)',
+                                        marginBottom: 'var(--spacing-xs)'
+                                    }}>
+                                        Tax Information for {selectedYear}
+                                    </h2>
+                                    <p style={{
+                                        fontSize: '0.9375rem',
+                                        color: 'var(--text-secondary)'
+                                    }}>
+                                        Scroll horizontally to view and fill all tax fields
                                     </p>
                                 </div>
-                            </Card>
-                        )}
 
-                        {/* Dependent Questions */}
-                        {isPersonal && hasDependents && (
-                            <Card style={{ marginBottom: 'var(--spacing-lg)', borderLeft: '4px solid var(--warning-500)' }}>
-                                <h3 style={{ marginBottom: 'var(--spacing-lg)' }}>Dependent Information</h3>
-
-                                <div className="form-group">
-                                    <label className="form-label">Was any dependent (19-24) a student last year?</label>
-                                    <select
-                                        className="form-input"
-                                        value={taxData.dependent_student ? 'Yes' : 'No'}
-                                        onChange={(e) => handleInputChange('dependent_student', e.target.value === 'Yes')}
-                                    >
-                                        <option value="No">No</option>
-                                        <option value="Yes">Yes</option>
-                                    </select>
+                                {/* Horizontal Scrolling Cards Container */}
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        gap: 'var(--spacing-lg)',
+                                        overflowX: 'auto',
+                                        overflowY: 'visible',
+                                        padding: 'var(--spacing-md) var(--spacing-sm)',
+                                        scrollSnapType: 'x mandatory',
+                                        scrollBehavior: 'smooth',
+                                        WebkitOverflowScrolling: 'touch',
+                                        marginBottom: 'var(--spacing-xl)',
+                                        scrollbarWidth: 'thin',
+                                        scrollbarColor: 'var(--primary-400) var(--surface-glass)'
+                                    }}
+                                    className="horizontal-scroll-container"
+                                >
+                                    {taxQuestions.map((question) => (
+                                        <FormCard
+                                            key={question.id}
+                                            question={question}
+                                            value={getValue(question.id)}
+                                            onChange={handleInputChange}
+                                            onDismiss={() => setDismissedCards(prev => ({ ...prev, [question.id]: true }))}
+                                            isDismissed={dismissedCards[question.id]}
+                                        />
+                                    ))}
                                 </div>
 
-                                <div className="form-group">
-                                    <label className="form-label">How many months was the dependent located in the US?</label>
-                                    <Input
-                                        type="number"
-                                        min="0"
-                                        max="12"
-                                        value={taxData.dependent_months_us || ''}
-                                        onChange={(e) => handleInputChange('dependent_months_us', parseInt(e.target.value) || null)}
-                                    />
+                                {/* Card Counter */}
+                                <div style={{
+                                    textAlign: 'center',
+                                    fontSize: '0.875rem',
+                                    color: 'var(--text-tertiary)',
+                                    marginBottom: 'var(--spacing-xl)'
+                                }}>
+                                    {taxQuestions.filter(q => !dismissedCards[q.id]).length} cards remaining
+                                    {Object.keys(dismissedCards).length > 0 && (
+                                        <button
+                                            onClick={() => setDismissedCards({})}
+                                            style={{
+                                                marginLeft: 'var(--spacing-md)',
+                                                padding: 'var(--spacing-xs) var(--spacing-sm)',
+                                                background: 'var(--surface-glass)',
+                                                border: '1px solid var(--surface-glass-border)',
+                                                borderRadius: 'var(--radius-sm)',
+                                                color: 'var(--text-primary)',
+                                                fontSize: '0.8125rem',
+                                                cursor: 'pointer',
+                                                transition: 'all var(--transition-fast)'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = 'var(--surface-glass-hover)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = 'var(--surface-glass)';
+                                            }}
+                                        >
+                                            Show All Cards
+                                        </button>
+                                    )}
                                 </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Did the dependent live with you last tax year?</label>
-                                    <select
-                                        className="form-input"
-                                        value={taxData.dependent_lived_with ? 'Yes' : 'No'}
-                                        onChange={(e) => handleInputChange('dependent_lived_with', e.target.value === 'Yes')}
-                                    >
-                                        <option value="No">No</option>
-                                        <option value="Yes">Yes</option>
-                                    </select>
-                                </div>
-
-                                <div className="form-group">
-                                    <label className="form-label">Did any dependent over age 16 work?</label>
-                                    <select
-                                        className="form-input"
-                                        value={taxData.dependent_worked ? 'Yes' : 'No'}
-                                        onChange={(e) => handleInputChange('dependent_worked', e.target.value === 'Yes')}
-                                    >
-                                        <option value="No">No</option>
-                                        <option value="Yes">Yes</option>
-                                    </select>
-                                </div>
-                            </Card>
-                        )}
-
-                        {/* Business Tax Questions */}
-                        {(isBusiness || (isPersonal && taxData.has_business_income)) && (
+                            </>
+                        ) : (
                             <Card style={{ marginBottom: 'var(--spacing-lg)' }}>
-                                <h3 style={{ marginBottom: 'var(--spacing-lg)' }}>Business Tax Information</h3>
-
-                                <div className="form-group">
-                                    <label className="form-label">Total Revenue (all forms of 1099, cash, deposits)</label>
-                                    <Input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        placeholder="0.00"
-                                        value={taxData.total_revenue ?? ''}
-                                        onChange={(e) => handleInputChange('total_revenue', e.target.value === '' ? null : parseFloat(e.target.value))}
-                                    />
-                                </div>
-
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-md)', marginBottom: 'var(--spacing-md)' }}>
-                                    <div className="form-group">
-                                        <label className="form-label">Phone Expense</label>
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            placeholder="0.00"
-                                            value={taxData.phone_expense ?? ''}
-                                            onChange={(e) => handleInputChange('phone_expense', e.target.value === '' ? null : parseFloat(e.target.value))}
-                                        />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="form-label">Internet Expense</label>
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            placeholder="0.00"
-                                            value={taxData.internet_expense ?? ''}
-                                            onChange={(e) => handleInputChange('internet_expense', e.target.value === '' ? null : parseFloat(e.target.value))}
-                                        />
-                                    </div>
-                                </div>
-
-                                <h4 style={{ fontSize: '1rem', marginTop: 'var(--spacing-lg)', marginBottom: 'var(--spacing-md)', borderTop: '1px solid var(--surface-glass-border)', paddingTop: 'var(--spacing-md)' }}>Industry-Specific Expenses</h4>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-md)' }}>
-                                    <div className="form-group">
-                                        <label className="form-label">Car/Truck Payment or Rent</label>
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="0.00"
-                                            value={taxData.industry_expenses?.car_rent || ''}
-                                            onChange={(e) => handleInputChange('industry_expenses', { ...taxData.industry_expenses, car_rent: parseFloat(e.target.value) || null })}
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Fuel</label>
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="0.00"
-                                            value={taxData.industry_expenses?.fuel || ''}
-                                            onChange={(e) => handleInputChange('industry_expenses', { ...taxData.industry_expenses, fuel: parseFloat(e.target.value) || null })}
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Dispatch/Platform Fees (Uber, etc.)</label>
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="0.00"
-                                            value={taxData.industry_expenses?.fees || ''}
-                                            onChange={(e) => handleInputChange('industry_expenses', { ...taxData.industry_expenses, fees: parseFloat(e.target.value) || null })}
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Other Professional Expenses</label>
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="0.00"
-                                            value={taxData.industry_expenses?.other || ''}
-                                            onChange={(e) => handleInputChange('industry_expenses', { ...taxData.industry_expenses, other: parseFloat(e.target.value) || null })}
-                                        />
-                                    </div>
+                                <div style={{
+                                    textAlign: 'center',
+                                    padding: 'var(--spacing-xl)',
+                                    color: 'var(--text-tertiary)'
+                                }}>
+                                    <p>No tax questions available for this profile type.</p>
                                 </div>
                             </Card>
                         )}

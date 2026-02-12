@@ -925,3 +925,29 @@ a:hover {
     font-size: 1.75rem;
   }
 }
+
+/* Horizontal Scroll Container for Form Cards */
+.horizontal-scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.horizontal-scroll-container::-webkit-scrollbar-track {
+  background: var(--surface-glass);
+  border-radius: var(--radius-md);
+}
+
+.horizontal-scroll-container::-webkit-scrollbar-thumb {
+  background: var(--primary-400);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
+}
+
+.horizontal-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-500);
+}
+
+/* Firefox scrollbar styling */
+.horizontal-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-400) var(--surface-glass);
+}

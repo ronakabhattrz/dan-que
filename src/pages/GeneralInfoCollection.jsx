@@ -6,6 +6,7 @@ import Card from '../components/Card';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import ProgressBar from '../components/ProgressBar';
+import FormCard from '../components/FormCard';
 import { validateField } from '../utils/validators';
 import '../index.css';
 
@@ -64,6 +65,7 @@ const GeneralInfoCollection = () => {
 
     const [errors, setErrors] = useState({});
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [dismissedCards, setDismissedCards] = useState({});
 
     const getQuestionsForBlock = (block) => {
         switch (block) {
@@ -156,8 +158,7 @@ const GeneralInfoCollection = () => {
     };
 
     const handleNext = async () => {
-        // No validation - allow blank fields
-        // Save data before moving to next question (non-blocking)
+        // Save data before moving to next block
         try {
             if (currentBlock !== BLOCKS.SUMMARY) {
                 // Save in background, don't wait
@@ -167,72 +168,59 @@ const GeneralInfoCollection = () => {
             console.error('Error in handleNext:', error);
         }
 
-        if (currentQuestionIndex < filteredQuestions.length - 1) {
-            setCurrentQuestionIndex(prev => prev + 1);
-        } else {
-            // Block finished, handle transition
-            try {
-                await updateProfileInfo(formData);
-            } catch (error) {
-                console.error('Error saving profile:', error);
-            }
+        // Reset dismissed cards when moving to next block
+        setDismissedCards({});
 
-            if (currentBlock === BLOCKS.PERSONAL_P1) {
-                setCurrentBlock(BLOCKS.PERSONAL_P2);
-                setCurrentQuestionIndex(0);
-                showInfo('Moving to Marital Status');
-            } else if (currentBlock === BLOCKS.PERSONAL_P2) {
-                setCurrentBlock(BLOCKS.PERSONAL_P3);
-                setCurrentQuestionIndex(0);
-                showInfo('Moving to Dependents');
-            } else if (currentBlock === BLOCKS.PERSONAL_P3) {
-                // Skip tax blocks, go directly to summary
-                setCurrentBlock(BLOCKS.SUMMARY);
-                setCurrentQuestionIndex(0);
-                showSuccess('Intake complete! Reviewing summary');
-            } else if (currentBlock === BLOCKS.BUSINESS_B1) {
-                setCurrentBlock(BLOCKS.BUSINESS_B2);
-                setCurrentQuestionIndex(0);
-                showInfo('Moving to Business Tax Details');
-            } else if (currentBlock === BLOCKS.BUSINESS_B2) {
-                setCurrentBlock(BLOCKS.SUMMARY);
-                setCurrentQuestionIndex(0);
-                showSuccess('Intake complete! Reviewing summary');
-            } else {
-                navigate('/verify-profile');
-            }
+        // Block finished, handle transition
+        try {
+            await updateProfileInfo(formData);
+        } catch (error) {
+            console.error('Error saving profile:', error);
+        }
+
+        if (currentBlock === BLOCKS.PERSONAL_P1) {
+            setCurrentBlock(BLOCKS.PERSONAL_P2);
+            showInfo('Moving to Marital Status');
+        } else if (currentBlock === BLOCKS.PERSONAL_P2) {
+            setCurrentBlock(BLOCKS.PERSONAL_P3);
+            showInfo('Moving to Dependents');
+        } else if (currentBlock === BLOCKS.PERSONAL_P3) {
+            // Skip tax blocks, go directly to summary
+            setCurrentBlock(BLOCKS.SUMMARY);
+            showSuccess('Intake complete! Reviewing summary');
+        } else if (currentBlock === BLOCKS.BUSINESS_B1) {
+            setCurrentBlock(BLOCKS.BUSINESS_B2);
+            showInfo('Moving to Business Tax Details');
+        } else if (currentBlock === BLOCKS.BUSINESS_B2) {
+            setCurrentBlock(BLOCKS.SUMMARY);
+            showSuccess('Intake complete! Reviewing summary');
+        } else {
+            navigate('/verify-profile');
         }
     };
 
     const handlePrevious = () => {
-        if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev - 1);
-        } else {
-            // Go back to previous block logic
-            if (currentBlock === BLOCKS.PERSONAL_P2) {
-                setCurrentBlock(BLOCKS.PERSONAL_P1);
-                setCurrentQuestionIndex(getQuestionsForBlock(BLOCKS.PERSONAL_P1).filter(q => !q.condition || q.condition(formData)).length - 1);
-            } else if (currentBlock === BLOCKS.PERSONAL_P3) {
-                setCurrentBlock(BLOCKS.PERSONAL_P2);
-                setCurrentQuestionIndex(getQuestionsForBlock(BLOCKS.PERSONAL_P2).filter(q => !q.condition || q.condition(formData)).length - 1);
-            } else if (currentBlock === BLOCKS.BUSINESS_B1) {
-                // For business profiles, go back to PERSONAL_P3 if personal, or stay at B1 start if pure business
-                if (currentProfile.type === 'personal') {
-                    setCurrentBlock(BLOCKS.PERSONAL_P3);
-                    setCurrentQuestionIndex(getQuestionsForBlock(BLOCKS.PERSONAL_P3).filter(q => !q.condition || q.condition(formData)).length - 1);
-                }
-            } else if (currentBlock === BLOCKS.BUSINESS_B2) {
-                setCurrentBlock(BLOCKS.BUSINESS_B1);
-                setCurrentQuestionIndex(getQuestionsForBlock(BLOCKS.BUSINESS_B1).filter(q => !q.condition || q.condition(formData)).length - 1);
-            } else if (currentBlock === BLOCKS.SUMMARY) {
-                // Go back to last block before summary
-                if (currentProfile.type === 'business') {
-                    setCurrentBlock(BLOCKS.BUSINESS_B2);
-                    setCurrentQuestionIndex(getQuestionsForBlock(BLOCKS.BUSINESS_B2).filter(q => !q.condition || q.condition(formData)).length - 1);
-                } else {
-                    setCurrentBlock(BLOCKS.PERSONAL_P3);
-                    setCurrentQuestionIndex(getQuestionsForBlock(BLOCKS.PERSONAL_P3).filter(q => !q.condition || q.condition(formData)).length - 1);
-                }
+        // Reset dismissed cards when going back
+        setDismissedCards({});
+
+        // Go back to previous block logic
+        if (currentBlock === BLOCKS.PERSONAL_P2) {
+            setCurrentBlock(BLOCKS.PERSONAL_P1);
+        } else if (currentBlock === BLOCKS.PERSONAL_P3) {
+            setCurrentBlock(BLOCKS.PERSONAL_P2);
+        } else if (currentBlock === BLOCKS.BUSINESS_B1) {
+            // For business profiles, go back to PERSONAL_P3 if personal, or stay at B1 start if pure business
+            if (currentProfile.type === 'personal') {
+                setCurrentBlock(BLOCKS.PERSONAL_P3);
+            }
+        } else if (currentBlock === BLOCKS.BUSINESS_B2) {
+            setCurrentBlock(BLOCKS.BUSINESS_B1);
+        } else if (currentBlock === BLOCKS.SUMMARY) {
+            // Go back to last block before summary
+            if (currentProfile.type === 'business') {
+                setCurrentBlock(BLOCKS.BUSINESS_B2);
+            } else {
+                setCurrentBlock(BLOCKS.PERSONAL_P3);
             }
         }
     };
@@ -286,11 +274,10 @@ const GeneralInfoCollection = () => {
             <div style={{
                 flex: 1,
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: 'var(--spacing-xl)'
+                flexDirection: 'column',
+                padding: 'var(--spacing-xl) 0'
             }}>
-                <div className="container container-sm">
+                <div className="container">
                     <div className="fade-in">
                         {/* Progress Bar */}
                         <div style={{ marginBottom: 'var(--spacing-xl)' }}>
@@ -305,108 +292,125 @@ const GeneralInfoCollection = () => {
                             </div>
                         </div>
 
-                        {/* Question Card */}
-                        <Card style={{
-                            padding: 'var(--spacing-2xl)',
-                            minHeight: '400px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'center'
+                        {/* Block Title */}
+                        <div style={{
+                            textAlign: 'center',
+                            marginBottom: 'var(--spacing-xl)'
                         }}>
-                            {currentBlock === BLOCKS.SUMMARY ? (
-                                <div>
-                                    <h2 style={{
-                                        fontSize: '2rem',
+                            <h2 style={{
+                                fontSize: '1.75rem',
+                                fontWeight: '700',
+                                color: 'var(--text-primary)',
+                                marginBottom: 'var(--spacing-xs)'
+                            }}>
+                                {currentBlock === BLOCKS.SUMMARY ? 'Final Summary' :
+                                    currentBlock === BLOCKS.PERSONAL_P1 ? 'Personal Information' :
+                                        currentBlock === BLOCKS.PERSONAL_P2 ? 'Marital Status' :
+                                            currentBlock === BLOCKS.PERSONAL_P3 ? 'Dependents' :
+                                                currentBlock === BLOCKS.BUSINESS_B1 ? 'Business Information' :
+                                                    currentBlock === BLOCKS.BUSINESS_B2 ? 'Business Tax Details' : ''}
+                            </h2>
+                            <p style={{
+                                fontSize: '0.9375rem',
+                                color: 'var(--text-secondary)'
+                            }}>
+                                {currentBlock === BLOCKS.SUMMARY
+                                    ? 'Review and complete your profile'
+                                    : 'Scroll horizontally to view and fill all fields'}
+                            </p>
+                        </div>
+
+                        {currentBlock === BLOCKS.SUMMARY ? (
+                            <Card style={{
+                                padding: 'var(--spacing-2xl)',
+                                maxWidth: '600px',
+                                margin: '0 auto'
+                            }}>
+                                <div style={{
+                                    textAlign: 'center',
+                                    padding: 'var(--spacing-2xl)',
+                                    background: 'var(--surface-glass)',
+                                    borderRadius: 'var(--radius-lg)',
+                                    border: '1px solid var(--surface-glass-border)'
+                                }}>
+                                    <div style={{ fontSize: '3rem', marginBottom: 'var(--spacing-md)' }}>✓</div>
+                                    <p style={{ fontSize: '1.125rem', color: 'var(--text-primary)', marginBottom: 'var(--spacing-sm)' }}>
+                                        Profile information collected successfully!
+                                    </p>
+                                    <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                                        Click "Save & Finish" to complete your profile.
+                                    </p>
+                                </div>
+                            </Card>
+                        ) : (
+                            <>
+                                {/* Horizontal Scrolling Cards Container */}
+                                <div
+                                    ref={scrollContainerRef}
+                                    style={{
+                                        display: 'flex',
+                                        gap: 'var(--spacing-lg)',
+                                        overflowX: 'auto',
+                                        overflowY: 'visible',
+                                        padding: 'var(--spacing-md) var(--spacing-sm)',
+                                        scrollSnapType: 'x mandatory',
+                                        scrollBehavior: 'smooth',
+                                        WebkitOverflowScrolling: 'touch',
                                         marginBottom: 'var(--spacing-xl)',
-                                        textAlign: 'center',
-                                        color: 'var(--text-primary)'
-                                    }}>
-                                        Final Summary
-                                    </h2>
-
-                                    <div style={{
-                                        textAlign: 'center',
-                                        padding: 'var(--spacing-2xl)',
-                                        background: 'var(--surface-glass)',
-                                        borderRadius: 'var(--radius-lg)',
-                                        border: '1px solid var(--surface-glass-border)'
-                                    }}>
-                                        <div style={{ fontSize: '3rem', marginBottom: 'var(--spacing-md)' }}>✓</div>
-                                        <p style={{ fontSize: '1.125rem', color: 'var(--text-primary)', marginBottom: 'var(--spacing-sm)' }}>
-                                            Profile information collected successfully!
-                                        </p>
-                                        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                                            Click "Save & Finish" to complete your profile.
-                                        </p>
-                                    </div>
+                                        // Custom scrollbar styling
+                                        scrollbarWidth: 'thin',
+                                        scrollbarColor: 'var(--primary-400) var(--surface-glass)'
+                                    }}
+                                    className="horizontal-scroll-container"
+                                >
+                                    {filteredQuestions.map((question, index) => (
+                                        <FormCard
+                                            key={question.id}
+                                            question={question}
+                                            value={formData[question.id]}
+                                            onChange={handleInputChange}
+                                            onDismiss={() => setDismissedCards(prev => ({ ...prev, [question.id]: true }))}
+                                            isDismissed={dismissedCards[question.id]}
+                                            error={errors[question.id]}
+                                        />
+                                    ))}
                                 </div>
-                            ) : (
-                                <div>
-                                    <h3 style={{
-                                        fontSize: '1.75rem',
-                                        marginBottom: 'var(--spacing-md)',
-                                        color: 'var(--text-primary)',
-                                        textAlign: 'center'
-                                    }}>
-                                        {currentQuestion?.label}
-                                    </h3>
 
-                                    {currentQuestion?.helper && (
-                                        <p style={{
-                                            fontSize: '0.875rem',
-                                            color: 'var(--text-secondary)',
-                                            marginBottom: 'var(--spacing-xl)',
-                                            textAlign: 'center'
-                                        }}>
-                                            Source: {currentQuestion.helper}
-                                        </p>
-                                    )}
-
-                                    <div style={{ marginTop: 'var(--spacing-xl)' }}>
-                                        {currentQuestion?.type === 'textarea' ? (
-                                            <textarea
-                                                className="form-input"
-                                                rows="4"
-                                                value={formData[currentQuestion.id] || ''}
-                                                onChange={(e) => handleInputChange(currentQuestion.id, e.target.value)}
-                                                placeholder={currentQuestion.placeholder}
-                                                style={{ fontSize: '1.125rem' }}
-                                            />
-                                        ) : currentQuestion?.type === 'select' ? (
-                                            <select
-                                                className="form-input"
-                                                value={formData[currentQuestion.id]}
-                                                onChange={(e) => handleInputChange(currentQuestion.id, e.target.value)}
-                                                style={{ fontSize: '1.125rem' }}
-                                            >
-                                                {currentQuestion.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                            </select>
-                                        ) : currentQuestion?.type === 'info' ? (
-                                            <div style={{
-                                                padding: 'var(--spacing-lg)',
+                                {/* Card Counter */}
+                                <div style={{
+                                    textAlign: 'center',
+                                    fontSize: '0.875rem',
+                                    color: 'var(--text-tertiary)',
+                                    marginTop: 'var(--spacing-md)'
+                                }}>
+                                    {filteredQuestions.filter(q => !dismissedCards[q.id]).length} cards remaining
+                                    {Object.keys(dismissedCards).length > 0 && (
+                                        <button
+                                            onClick={() => setDismissedCards({})}
+                                            style={{
+                                                marginLeft: 'var(--spacing-md)',
+                                                padding: 'var(--spacing-xs) var(--spacing-sm)',
                                                 background: 'var(--surface-glass)',
-                                                borderRadius: 'var(--radius-md)',
                                                 border: '1px solid var(--surface-glass-border)',
-                                                textAlign: 'center',
-                                                color: 'var(--text-secondary)'
-                                            }}>
-                                                <p>{currentQuestion.label}</p>
-                                                {currentQuestion.helper && <p style={{ fontSize: '0.875rem', marginTop: 'var(--spacing-sm)' }}>{currentQuestion.helper}</p>}
-                                            </div>
-                                        ) : (
-                                            <Input
-                                                type={currentQuestion?.type}
-                                                value={formData[currentQuestion?.id] || ''}
-                                                onChange={(e) => handleInputChange(currentQuestion.id, e.target.value)}
-                                                placeholder={currentQuestion?.placeholder}
-                                                error={errors[currentQuestion?.id]}
-                                                style={{ fontSize: '1.125rem' }}
-                                            />
-                                        )}
-                                    </div>
+                                                borderRadius: 'var(--radius-sm)',
+                                                color: 'var(--text-primary)',
+                                                fontSize: '0.8125rem',
+                                                cursor: 'pointer',
+                                                transition: 'all var(--transition-fast)'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = 'var(--surface-glass-hover)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = 'var(--surface-glass)';
+                                            }}
+                                        >
+                                            Show All Cards
+                                        </button>
+                                    )}
                                 </div>
-                            )}
-                        </Card>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
@@ -420,7 +424,7 @@ const GeneralInfoCollection = () => {
                 bottom: 0,
                 zIndex: 10
             }}>
-                <div className="container container-sm">
+                <div className="container">
                     <div style={{
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -430,10 +434,10 @@ const GeneralInfoCollection = () => {
                         <Button
                             variant="secondary"
                             onClick={handlePrevious}
-                            disabled={currentBlock === BLOCKS.PERSONAL_P1 && currentQuestionIndex === 0}
+                            disabled={currentBlock === BLOCKS.PERSONAL_P1 || currentBlock === BLOCKS.BUSINESS_B1}
                             style={{ minWidth: '120px' }}
                         >
-                            ← Previous
+                            ← Previous Section
                         </Button>
 
                         {currentBlock === BLOCKS.SUMMARY ? (
@@ -446,7 +450,7 @@ const GeneralInfoCollection = () => {
                                 onClick={handleNext}
                                 style={{ minWidth: '120px' }}
                             >
-                                Next →
+                                Next Section →
                             </Button>
                         )}
                     </div>
